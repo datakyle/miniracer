@@ -39,7 +39,7 @@ specified by IEEE 754). Sin and cos come from a Taylor polynomial in `src/core/d
 
 ## Design
 
-This is the dark inversion of the Kyle Bautista design language: Inter at 400/500/600, `#1d1d1f` surfaces, hairline borders instead of shadows, and sentence case. Blue (`#0d74ce`) appears only on actions. Warm amber (`#B8906A`) appears once per screen, as the brand dot, and as the player's car. The tokens live at the top of `src/styles.css`. The race view itself is deliberately louder and doesn't follow the brand palette. Each day's seed picks one of three road types, each in two colour variants (`THEMES` in `src/core/track.js`, drawn by `src/game/render.js`):
+This is the dark inversion of the Kyle Bautista design language: Inter at 400/500/600, `#1d1d1f` surfaces, hairline borders instead of shadows, and sentence case. Blue (`#0d74ce`) appears only on actions. Warm amber (`#B8906A`) appears once per screen, as the brand dot. The tokens live at the top of `src/styles.css`. The race view itself is deliberately louder and doesn't follow the brand palette. Each day's seed picks one of three road types, each in two colour variants (`THEMES` in `src/core/track.js`, drawn by `src/game/render.js`):
 
 - **Circuit:** striped grass, white edge lines, red/white or blue/white curbs on the corners, and a grandstand by the start.
 - **Street:** city blocks, sidewalks, white lane edges and a dashed centre line, in a day or neon-night version.
