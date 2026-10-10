@@ -12,7 +12,7 @@ Open it on your phone. Hold the left or right side of the screen to steer. When 
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
 - **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
 - **About 10 seconds a lap.** Short enough to run it ten times in a coffee break.
-- **A starter ghost.** Every track comes with Sam, a below-average driver to race against your first time. Most players beat Sam within a few tries.
+- **A starter ghost.** Every track comes with Danger Darrell, a below-average driver to race against your first time. Most players beat Darrell within a few tries.
 - **Race your friends.** "Share best" sends a link that holds your whole lap. Your friend races your ghost, and everyone whose ghost you have shows up on the day's board.
 
 Inspired by Reddit's [Mini Racer](https://github.com/shimrut/mini-racer). All code here is original.
@@ -49,7 +49,7 @@ src/core/        pure, deterministic, no DOM
   dmath.js       deterministic sin/cos
   track.js       procedural track: polar points -> centripetal Catmull-Rom -> resample -> validate
   sim.js         car physics (auto throttle, yaw, grip/drift, walls, checkpoints, sub-frame finish)
-  bot.js         pursuit driver: proves the track is drivable; a laggy variant drives Sam, the starter ghost
+  bot.js         pursuit driver: proves the track is drivable; a laggy variant drives Danger Darrell, the starter ghost
   replay.js      input codec
   day.js         date -> { track, bot lap, starter ghost }
 src/game/        browser side
