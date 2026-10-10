@@ -1,3 +1,5 @@
+<p align="center"><img src="logo.svg" alt="Daily lap logo" width="132" height="132"></p>
+
 # Daily lap
 
 A two-minute daily habit: one lap, one new track, and a link that lets a friend race your exact lap. It runs in a phone browser. No login, no app, no server.

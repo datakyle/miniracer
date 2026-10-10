@@ -358,7 +358,7 @@ function renderHome() {
   $('#home').innerHTML = `
     <div class="card">
       <div class="top">
-        <div class="brand">Daily lap</div>
+        <div class="brand"><img class="appmark" src="./icon.svg" alt="" width="28" height="28">Daily lap</div>
         <button class="icon" id="btn-sound" aria-label="${store.sound ? 'Mute' : 'Unmute'}">${store.sound ? ICON_SOUND_ON : ICON_SOUND_OFF}</button>
       </div>
       <span class="eyebrow">No. ${day.number} · ${prettyDate(dateKey)}${isToday ? '' : ` · <a href="#" id="go-today">Play today's track</a>`}</span>
