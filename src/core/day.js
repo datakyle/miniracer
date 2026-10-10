@@ -1,13 +1,15 @@
 // One day = one track. Everything here is a pure function of the date key, so
-// every player gets the same track and the same medal times with no server.
+// every player gets the same track and the same starter ghost with no server.
 
 import { generateGeometry } from './track.js';
-import { bestBotLap } from './bot.js';
+import { bestBotLap, rookieLap } from './bot.js';
 import { timeMs } from './sim.js';
 
 // Puzzle #1 is the launch day.
 export const EPOCH = '2026-10-10';
-const MEDAL_FACTORS = { gold: 0.985, silver: 1.06, bronze: 1.16 };
+// The starter ghost's name. Below average on purpose: most players beat
+// them within a few tries.
+export const ROOKIE_NAME = 'sam';
 
 export function dateKeyFromDate(d) {
   const y = d.getFullYear();
@@ -34,30 +36,20 @@ export function buildDay(dateKey) {
     const track = generateGeometry(dateKey, attempt);
     if (!track) continue;
     const bot = bestBotLap(track);
-    if (!bot || bot.time > 32) continue;
-    const botMs = timeMs(bot.time);
+    if (!bot || bot.time > 11) continue;
+    const rookie = rookieLap(track, bot.time);
+    if (!rookie) continue;
     const day = {
       dateKey,
       number: dayNumber(dateKey),
       track,
       attempt,
-      bot: { ms: botMs, inputs: bot.inputs },
-      medals: {
-        gold: Math.round(botMs * MEDAL_FACTORS.gold),
-        silver: Math.round(botMs * MEDAL_FACTORS.silver),
-        bronze: Math.round(botMs * MEDAL_FACTORS.bronze),
-      },
+      // strong lap: drives the menu demo; not shown as a target
+      bot: { ms: timeMs(bot.time), inputs: bot.inputs },
+      rookie: { name: ROOKIE_NAME, ms: timeMs(rookie.time), inputs: rookie.inputs },
     };
     cache.set(dateKey, day);
     return day;
   }
   throw new Error(`no valid track for ${dateKey}`);
-}
-
-export function medalFor(day, ms) {
-  if (ms == null) return null;
-  if (ms <= day.medals.gold) return 'gold';
-  if (ms <= day.medals.silver) return 'silver';
-  if (ms <= day.medals.bronze) return 'bronze';
-  return null;
 }

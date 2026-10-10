@@ -1,10 +1,11 @@
-import { buildDay, dateKeyFromDate, medalFor } from './core/day.js';
+import { buildDay, dateKeyFromDate } from './core/day.js';
 import { createSim, step, DT, MAX_FRAMES, TUNING, timeMs } from './core/sim.js';
 import { encodeInputs, decodeInputs } from './core/replay.js';
 import { createRenderer, drawPreview } from './game/render.js';
 import { createInput } from './game/input.js';
 import { createAudio } from './game/audio.js';
 import { store, prune } from './game/storage.js';
+import { listGhosts, submitRun } from './game/ghosts.js';
 import { parseChallenge, challengeUrl, shareText, shareRun, fmt, fmtDelta, cleanName, capitalize } from './game/share.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -16,7 +17,9 @@ audio.setMuted(!store.sound);
 
 // the player is the warm amber; ghosts are quiet tints
 const PLAYER_COLOR = '#b8906a';
-const FRIEND_COLORS = ['#8fb4e0', '#c9a0dc', '#9fd0a8', '#e0b8a0'];
+const FRIEND_COLORS = ['#8fb4e0', '#c9a0dc', '#9fd0a8'];
+const STARTER_COLOR = '#e0b8a0';
+const MAX_FRIEND_GHOSTS = 3;
 const COUNTDOWN = 1.6;
 
 // dev only: ?bot drives the player's car with the bot lap (for testing)
@@ -67,30 +70,15 @@ function startAttract() {
 
 // ---------- ghosts ----------
 
-function ghostFromEncoded(encoded, label, color) {
-  try {
-    return { frames: decodeInputs(encoded), sim: createSim(day.track), label, color, visible: true };
-  } catch {
-    return null;
-  }
-}
-
 function buildGhosts() {
-  const list = [];
-  const mine = store.day(dateKey);
-  if (store.ghost && mine?.inputs) {
-    const g = ghostFromEncoded(mine.inputs, 'best', '#ffffff');
-    if (g) list.push(g);
-  }
-  const friends = Object.entries(store.friends(dateKey)).sort((a, b) => a[1].ms - b[1].ms).slice(0, 3);
-  friends.forEach(([name, f], i) => {
-    const g = ghostFromEncoded(f.inputs, name, FRIEND_COLORS[i % FRIEND_COLORS.length]);
-    if (g) list.push(g);
-  });
-  if (store.ghost && medalFor(day, mine?.best) !== 'gold') {
-    list.push({ frames: day.bot.inputs, sim: createSim(day.track), label: 'gold', color: '#d4b46a', visible: true });
-  }
-  return list;
+  const all = listGhosts(day);
+  const friends = all.filter((g) => g.kind === 'friend').slice(0, MAX_FRIEND_GHOSTS);
+  const picked = [
+    ...all.filter((g) => g.kind === 'you' && store.ghost).map((g) => ({ ...g, label: 'best', color: '#ffffff' })),
+    ...friends.map((g, i) => ({ ...g, label: g.name, color: FRIEND_COLORS[i % FRIEND_COLORS.length] })),
+    ...all.filter((g) => g.kind === 'starter').map((g) => ({ ...g, label: g.name, color: STARTER_COLOR })),
+  ];
+  return picked.map((g) => ({ frames: g.frames, sim: createSim(day.track), label: g.label, color: g.color, visible: true }));
 }
 
 function computeSplits(encoded) {
@@ -145,7 +133,7 @@ function finishRace() {
   const before = store.day(dateKey)?.best ?? null;
   let isBest = false;
   if (finished) {
-    isBest = store.recordRun(dateKey, ms, encodeInputs(inputs.slice(0, sim.frame)));
+    isBest = submitRun(dateKey, ms, encodeInputs(inputs.slice(0, sim.frame)));
   }
   lastResult = { ms, before, isBest, finished };
   renderFinish();
@@ -339,37 +327,21 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-const dot = (m) => `<span class="mdot ${m}"></span>`;
 
 const ICON_SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
 const ICON_SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
 
-function medalRow(best) {
-  const got = medalFor(day, best);
-  const rank = { gold: 3, silver: 2, bronze: 1 };
-  return ['gold', 'silver', 'bronze']
-    .map((m) => {
-      const earned = got && rank[got] >= rank[m];
-      return `<div class="medal ${earned ? 'earned' : ''}" title="${capitalize(m)}">${dot(m)}<span>${fmt(day.medals[m])}</span></div>`;
-    })
-    .join('');
-}
-
-function friendsList() {
-  const mine = store.day(dateKey)?.best;
-  const rows = Object.entries(store.friends(dateKey)).map(([name, f]) => ({ name, ms: f.ms, me: false }));
-  if (!rows.length) return '';
-  if (mine != null) rows.push({ name: store.name || 'You', ms: mine, me: true });
-  rows.sort((a, b) => a.ms - b.ms);
-  return `<div class="board"><div class="label">Friends today</div>${rows
-    .map((r, i) => `<div class="board-row ${r.me ? 'me' : ''}"><span>${i + 1}</span><span>${esc(r.name)}${r.me && store.name ? ' (you)' : ''}</span><b>${fmt(r.ms)}</b></div>`)
+// everyone whose ghost you have for this day, fastest first
+function ghostBoard() {
+  const rows = listGhosts(day);
+  return `<div class="board"><div class="label">Ghosts today</div>${rows
+    .map((g, i) => `<div class="board-row ${g.kind === 'you' ? 'me' : ''}"><span>${i + 1}</span><span>${esc(g.name)}${g.kind === 'you' && store.name ? ' (you)' : ''}</span><b>${fmt(g.ms)}</b></div>`)
     .join('')}</div>`;
 }
 
 function renderHome() {
   const mine = store.day(dateKey);
   const best = mine?.best ?? null;
-  const medal = medalFor(day, best);
   const streak = store.streak(todayKey);
   const isToday = dateKey === todayKey;
 
@@ -392,12 +364,11 @@ function renderHome() {
       <span class="eyebrow">No. ${day.number} · ${prettyDate(dateKey)}${isToday ? '' : ` · <a href="#" id="go-today">Play today's track</a>`}</span>
       <canvas class="preview" id="preview"></canvas>
       <h1>${esc(capitalize(day.track.name))}</h1>
-      <div class="medals">${medalRow(best)}</div>
       <div class="pb">${best != null
-        ? `Your best <b>${fmt(best)}</b>${medal ? `, ${medal}` : ''}. ${runs} run${runs === 1 ? '' : 's'}.`
-        : 'No lap yet today.'}${streak > 1 ? ` ${streak} days in a row.` : ''}</div>
+        ? `Your best <b>${fmt(best)}</b>. ${runs} run${runs === 1 ? '' : 's'}.`
+        : `No lap yet today. Beat ${esc(day.rookie.name)}'s <b>${fmt(day.rookie.ms)}</b>.`}${streak > 1 ? ` ${streak} days in a row.` : ''}</div>
       ${challengeHtml}
-      ${friendsList()}
+      ${ghostBoard()}
       <div class="stack">
         <button class="primary" id="btn-race">${best != null ? 'Race again' : 'Race'}</button>
         ${best != null ? '<button class="secondary" id="btn-share-home">Share my best</button>' : ''}
@@ -439,29 +410,15 @@ function renderFinish() {
     else if (r.isBest) sub = 'First lap done.';
     else sub = `<span class="behind">${fmtDelta(r.ms - best)}</span> off your best of ${fmt(best)}`;
   }
-  const medal = medalFor(day, r.ms);
-  let medalHtml = '';
-  if (medal) {
-    medalHtml = `<div class="medal-big">${dot(medal)}${capitalize(medal)}</div>`;
-  } else if (r.finished) {
-    medalHtml = `<div class="muted">${fmt(r.ms - day.medals.bronze)} to bronze</div>`;
-  }
-  if (medal && medal !== 'gold') {
-    const nextM = medal === 'bronze' ? 'silver' : 'gold';
-    medalHtml += `<div class="muted">${fmt(r.ms - day.medals[nextM])} to ${nextM}</div>`;
-  }
-
   let vs = '';
-  const friends = Object.entries(store.friends(dateKey));
-  if (r.finished && friends.length) {
-    vs = friends
-      .sort((a, b) => a[1].ms - b[1].ms)
-      .slice(0, 3)
-      .map(([name, f]) => (r.ms < f.ms
-        ? `<div>You beat <b>${esc(name)}</b> by ${fmt(f.ms - r.ms)}.</div>`
-        : `<div><b>${esc(name)}</b> is ahead by ${fmt(r.ms - f.ms)}.</div>`))
+  if (r.finished) {
+    const others = listGhosts(day).filter((g) => g.kind !== 'you').slice(0, 4);
+    vs = others
+      .map((g) => (r.ms < g.ms
+        ? `<div>You beat <b>${esc(g.name)}</b> by ${fmt(g.ms - r.ms)}.</div>`
+        : `<div><b>${esc(g.name)}</b> is ahead by ${fmt(r.ms - g.ms)}.</div>`))
       .join('');
-    vs = `<div class="vs">${vs}</div>`;
+    if (vs) vs = `<div class="vs">${vs}</div>`;
   }
 
   $('#finish').innerHTML = `
@@ -469,7 +426,6 @@ function renderFinish() {
       <span class="label">No. ${day.number} · ${esc(capitalize(day.track.name))}</span>
       <div class="result">${headline}</div>
       <div class="sub">${sub}</div>
-      ${medalHtml}
       ${vs}
       <div class="row">
         <button class="primary" id="btn-again">Race again</button>
@@ -510,7 +466,7 @@ async function doShare(btn) {
   const mine = store.day(dateKey);
   if (!mine?.best) return;
   const url = challengeUrl({ dateKey, ms: mine.best, name: store.name, inputs: mine.inputs });
-  const text = shareText({ day, ms: mine.best, medal: medalFor(day, mine.best) });
+  const text = shareText({ day, ms: mine.best });
   const res = await shareRun({ text, url });
   if (res === 'copied') toast('Link copied. Send it to a friend.');
 }

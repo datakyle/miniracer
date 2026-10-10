@@ -71,10 +71,8 @@ export function capitalize(s) {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-export const MEDAL_EMOJI = { gold: '🥇', silver: '🥈', bronze: '🥉' };
-
-export function shareText({ day, ms, medal }) {
-  const line = `${medal ? MEDAL_EMOJI[medal] + ' ' : '🏁 '}${fmt(ms)}`;
+export function shareText({ day, ms }) {
+  const line = `🏁 ${fmt(ms)}`;
   return `Daily lap #${day.number} · ${capitalize(day.track.name)}\n${line}\nRace my ghost:`;
 }
 

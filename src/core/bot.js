@@ -1,13 +1,14 @@
 // A simple pursuit driver. It uses the same three inputs a player has, so
 // its lap is always achievable. Used to (1) reject undrivable tracks and
-// (2) set the day's medal times. Only exact float ops, so every device gets
-// the same medal times.
+// (2) drive the day's starter ghost, a deliberately sloppy "rookie". Only
+// exact float ops, so every device gets the same laps.
 
 import { createSim, step, MAX_FRAMES } from './sim.js';
 
-function drive(track, look, dead, inside) {
+function drive(track, look, dead, inside, delay = 0) {
   const st = createSim(track);
   const inputs = [];
+  const decided = [];
   const n = track.n;
   while (!st.finished && st.frame < MAX_FRAMES) {
     const speed = Math.sqrt(st.vx * st.vx + st.vy * st.vy);
@@ -23,7 +24,9 @@ function drive(track, look, dead, inside) {
     const dy = ty - st.y;
     const dl = Math.sqrt(dx * dx + dy * dy) || 1;
     const cross = (st.hx * dy - st.hy * dx) / dl;
-    const input = cross > dead ? 1 : cross < -dead ? -1 : 0;
+    decided.push(cross > dead ? 1 : cross < -dead ? -1 : 0);
+    // reaction lag: act on what was decided `delay` frames ago
+    const input = st.frame >= delay ? decided[st.frame - delay] : 0;
     inputs.push(input);
     step(st, input);
   }
@@ -37,6 +40,24 @@ export function bestBotLap(track) {
       for (const inside of [0, 0.5, 1]) {
         const r = drive(track, look, dead, inside);
         if (r.finished && (!best || r.time < best.time)) best = r;
+      }
+    }
+  }
+  return best;
+}
+
+// The starter ghost: a below-average driver. Reacts late and corrects
+// sloppily. Picks the variant whose lap lands closest to `slowdown` times the
+// strong bot's lap, so every day's rookie is about equally beatable.
+export function rookieLap(track, refTime, slowdown = 1.3) {
+  const target = refTime * slowdown;
+  let best = null;
+  for (const delay of [10, 14, 18, 22]) {
+    for (const dead of [0.15, 0.25, 0.35]) {
+      for (const look of [4, 6, 8]) {
+        const r = drive(track, look, dead, 0, delay);
+        if (!r.finished) continue;
+        if (!best || Math.abs(r.time - target) < Math.abs(best.time - target)) best = r;
       }
     }
   }

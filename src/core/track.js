@@ -13,8 +13,8 @@ export const HALF_WIDTH = 4;
 export const SPACING = 1.5;
 const MIN_RADIUS = 7.5;
 const CLEARANCE = HALF_WIDTH * 2 + 5;
-const MIN_LENGTH = 340;
-const MAX_LENGTH = 560;
+const MIN_LENGTH = 175;
+const MAX_LENGTH = 235;
 
 // Dark palettes. Visual only, but chosen by the seed so a day keeps its look.
 export const THEMES = [
@@ -90,9 +90,9 @@ function resample(poly, spacing) {
 }
 
 function controlPoints(rng) {
-  const count = rng.int(8, 14);
+  const count = rng.int(6, 10);
   const pts = [];
-  const baseR = rng.range(55, 80);
+  const baseR = rng.range(27, 36);
   for (let i = 0; i < count; i++) {
     const ang = ((i + rng.range(-0.3, 0.3)) / count) * TWO_PI;
     // occasional deep pinch makes hairpins and chicanes

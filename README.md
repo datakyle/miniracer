@@ -9,8 +9,9 @@ Open it on your phone. Hold the left or right side of the screen to steer. When 
 - **A new track every day.** The date seeds a procedural generator, so everyone gets the same track.
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
 - **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
-- **Medals.** A built-in bot drives every track to set the gold, silver and bronze times.
-- **Race your friends.** "Share best" sends a link that holds your whole lap. Your friend races your ghost and sees your time on a friends board.
+- **About 10 seconds a lap.** Short enough to run it ten times in a coffee break.
+- **A starter ghost.** Every track comes with Sam, a below-average driver to race against your first time. Most players beat Sam within a few tries.
+- **Race your friends.** "Share best" sends a link that holds your whole lap. Your friend races your ghost, and everyone whose ghost you have shows up on the day's board.
 
 Inspired by Reddit's [Mini Racer](https://github.com/shimrut/mini-racer). All code here is original.
 
@@ -46,15 +47,16 @@ src/core/        pure, deterministic, no DOM
   dmath.js       deterministic sin/cos
   track.js       procedural track: polar points -> centripetal Catmull-Rom -> resample -> validate
   sim.js         car physics (auto throttle, yaw, grip/drift, walls, checkpoints, sub-frame finish)
-  bot.js         pursuit driver: proves the track is drivable and sets medal times
+  bot.js         pursuit driver: proves the track is drivable; a laggy variant drives Sam, the starter ghost
   replay.js      input codec
-  day.js         date -> { track, medals, bot lap }
+  day.js         date -> { track, bot lap, starter ghost }
 src/game/        browser side
   render.js      canvas renderer (themes, curbs, skid marks, ghosts, scenery)
   input.js       multi-touch halves + keyboard
   audio.js       procedural engine / tyre / bump sounds
   share.js       challenge links + verification
   storage.js     localStorage (bests, ghosts, friends, streak)
+  ghosts.js      which ghosts exist for a day; the seam for a future shared ghost server
 src/main.js      game loop, screens
 ```
 
@@ -81,7 +83,8 @@ For other static hosts, either serve the repo root or run `npm run build` and up
 
 - Handling: `TUNING` in `src/core/sim.js`
 - Track shape and size: constants at the top of `src/core/track.js`
-- Medal difficulty: `MEDAL_FACTORS` in `src/core/day.js`
+- Lap length: `MIN_LENGTH` / `MAX_LENGTH` in `src/core/track.js` (175 to 235 units is about 9 to 11 s)
+- Starter ghost: `ROOKIE_NAME` in `src/core/day.js`, and the `slowdown` in `rookieLap` (`src/core/bot.js`)
 
 Changing any of these changes the tracks or the physics, so old challenge links stop
 verifying.

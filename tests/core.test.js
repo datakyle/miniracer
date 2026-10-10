@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDay, medalFor, dayNumber } from '../src/core/day.js';
+import { buildDay, dayNumber } from '../src/core/day.js';
 import { runInputs, timeMs, createSim, step } from '../src/core/sim.js';
 import { encodeInputs, decodeInputs } from '../src/core/replay.js';
 import { dsin, dcos } from '../src/core/dmath.js';
@@ -21,21 +21,23 @@ describe('daily tracks', () => {
     const a = buildDay('2026-10-10');
     const b = buildDay('2026-10-10');
     expect(Array.from(a.track.xs)).toEqual(Array.from(b.track.xs));
-    expect(a.medals).toEqual(b.medals);
+    expect(a.rookie.ms).toBe(b.rookie.ms);
   });
 
-  it('every day of the next 4 months builds a drivable track', () => {
+  it('every day of the next 4 months builds a short, drivable track', () => {
     const names = new Set();
     for (const k of keys) {
       const day = buildDay(k);
-      expect(day.bot.ms).toBeGreaterThan(8000);
-      expect(day.bot.ms).toBeLessThan(32000);
-      expect(day.medals.gold).toBeLessThan(day.medals.silver);
-      expect(day.medals.silver).toBeLessThan(day.medals.bronze);
+      // a strong lap is ~8-11s, so an average player lands around 10s
+      expect(day.bot.ms).toBeGreaterThan(6500);
+      expect(day.bot.ms).toBeLessThanOrEqual(11000);
+      // the starter ghost is clearly slower than a strong lap
+      expect(day.rookie.ms).toBeGreaterThan(day.bot.ms * 1.15);
+      expect(day.rookie.ms).toBeLessThan(day.bot.ms * 1.5);
       names.add(day.track.name);
     }
     expect(names.size).toBeGreaterThan(80);
-  });
+  }, 30000);
 
   it('numbers days from launch', () => {
     expect(dayNumber('2026-10-10')).toBe(1);
@@ -74,12 +76,13 @@ describe('replays', () => {
   });
 });
 
-describe('medals', () => {
-  it('grades times', () => {
-    const day = buildDay('2026-10-10');
-    expect(medalFor(day, day.medals.gold)).toBe('gold');
-    expect(medalFor(day, day.medals.gold + 1)).toBe('silver');
-    expect(medalFor(day, day.medals.bronze + 1)).toBe(null);
-    expect(medalFor(day, null)).toBe(null);
+describe('starter ghost', () => {
+  it('replays to its recorded time', () => {
+    for (const k of keys.slice(0, 10)) {
+      const day = buildDay(k);
+      const res = runInputs(day.track, day.rookie.inputs);
+      expect(res.finished).toBe(true);
+      expect(timeMs(res.finishTime)).toBe(day.rookie.ms);
+    }
   });
 });

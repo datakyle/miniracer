@@ -17,9 +17,6 @@
   --warm: #b8906a;
   --ahead: #8fc9a3;
   --behind: #d99a8e;
-  --gold: #d4b46a;
-  --silver: #c7c7cc;
-  --bronze: #a8795a;
   --text: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --r-md: 8px;
   --r-lg: 12px;
@@ -184,51 +181,6 @@ h1 {
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.03em;
-}
-
-.medals {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.medal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 4px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.medal.earned {
-  color: var(--on-dark);
-  background: var(--surface-2);
-}
-
-.mdot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.mdot.gold {
-  background: var(--gold);
-}
-
-.mdot.silver {
-  background: var(--silver);
-}
-
-.mdot.bronze {
-  background: var(--bronze);
 }
 
 .pb {
@@ -405,21 +357,6 @@ h1 {
 
 .behind {
   color: var(--behind);
-}
-
-.medal-big {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.medal-big .mdot {
-  width: 10px;
-  height: 10px;
 }
 
 .vs {
