@@ -426,6 +426,31 @@ function drawBales(ctx, theme, bales, vis) {
   }
 }
 
+// trail colour by speed: cool blue when slow, hot orange-red at full speed
+function trailColor(sr, alpha) {
+  const hue = 200 - 185 * sr;
+  return `hsla(${hue.toFixed(0)},100%,${(55 + 8 * sr).toFixed(0)}%,${alpha.toFixed(3)})`;
+}
+
+// the player's recent path, fading and tapering with age
+function drawTrail(ctx, trail) {
+  const n = trail.length;
+  if (n < 2) return;
+  ctx.lineCap = 'round';
+  for (let i = 1; i < n; i++) {
+    const a = trail[i - 1];
+    const b = trail[i];
+    const age = 1 - i / n; // 0 = newest
+    const fade = (1 - age) * (1 - age);
+    ctx.strokeStyle = trailColor(b.sr, 0.85 * fade);
+    ctx.lineWidth = 0.25 + 0.75 * fade;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+}
+
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   let track = null;
@@ -436,6 +461,9 @@ export function createRenderer(canvas) {
   let dpr = 1;
   let cssW = 0;
   let cssH = 0;
+  // screen-space wind streaks (css px)
+  let streaks = [];
+  let vignette = null;
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -443,6 +471,7 @@ export function createRenderer(canvas) {
     cssH = window.innerHeight;
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
+    vignette = null;
   }
   resize();
   window.addEventListener('resize', resize);
@@ -483,8 +512,68 @@ export function createRenderer(canvas) {
     return Math.max(7, Math.min(16, short / 36));
   }
 
+  // speed effects drawn over the world, in screen space
+  function drawSpeedFx(view) {
+    const sr = view.speedRatio || 0;
+    const dt = view.dt || 0;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // wind streaks rush past the edges once the car is really moving
+    const len = Math.hypot(view.vel?.x || 0, view.vel?.y || 0) || 1;
+    const dx = -(view.vel?.x || 0) / len;
+    const dy = -(view.vel?.y || 0) / len;
+    const intensity = Math.max(0, (sr - 0.55) / 0.45);
+    if (view.racing && intensity > 0) {
+      const rate = intensity * 120 * dt;
+      const count = Math.floor(rate) + (Math.random() < rate - Math.floor(rate) ? 1 : 0);
+      for (let k = 0; k < count; k++) {
+        // keep the middle clear: streaks live in an outer ring of the screen
+        const ang = Math.random() * Math.PI * 2;
+        const rx = cssW * (0.32 + Math.random() * 0.3);
+        const ry = cssH * (0.32 + Math.random() * 0.3);
+        streaks.push({
+          x: cssW / 2 + Math.cos(ang) * rx,
+          y: cssH / 2 + Math.sin(ang) * ry,
+          life: 1,
+          len: 40 + 90 * intensity * Math.random(),
+        });
+      }
+    }
+    const pxSpeed = 1400 * (0.5 + sr);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2.2;
+    for (const st of streaks) {
+      st.x += dx * pxSpeed * dt;
+      st.y += dy * pxSpeed * dt;
+      st.life -= dt * 3.2;
+      if (st.life <= 0) continue;
+      ctx.strokeStyle = `rgba(255,255,255,${(0.5 * st.life * Math.max(intensity, 0.3)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(st.x, st.y);
+      ctx.lineTo(st.x - dx * st.len, st.y - dy * st.len);
+      ctx.stroke();
+    }
+    streaks = streaks.filter((st) => st.life > 0 && st.x > -200 && st.x < cssW + 200 && st.y > -200 && st.y < cssH + 200);
+    if (!view.racing) streaks.length = 0;
+
+    // edges darken a little at top speed (tunnel vision)
+    const v = Math.max(0, (sr - 0.6) / 0.4);
+    if (view.racing && v > 0) {
+      if (!vignette) {
+        vignette = ctx.createRadialGradient(cssW / 2, cssH / 2, Math.min(cssW, cssH) * 0.3, cssW / 2, cssH / 2, Math.hypot(cssW, cssH) * 0.6);
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(1, 'rgba(0,0,0,1)');
+      }
+      ctx.globalAlpha = 0.38 * v;
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, cssW, cssH);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function draw(view) {
-    const ppu = pixelsPerUnit();
+    // the camera pulls back a little at speed
+    const ppu = pixelsPerUnit() * (view.zoom || 1);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -547,6 +636,8 @@ export function createRenderer(canvas) {
       }
     }
 
+    if (view.trail) drawTrail(ctx, view.trail);
+
     const p = view.player;
     drawCar(ctx, p.x, p.y, Math.atan2(p.hy, p.hx), view.playerColor, 1, true);
 
@@ -557,6 +648,8 @@ export function createRenderer(canvas) {
 
     // trees, buildings and stands sit off the road, so draw them last
     drawScenery(ctx, theme, scenery, vis);
+
+    drawSpeedFx(view);
   }
 
   return { setDay, draw, resize, pixelsPerUnit, kind: () => theme?.kind };

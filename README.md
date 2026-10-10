@@ -11,6 +11,7 @@ Open it on your phone. Hold the left or right side of the screen to steer. When 
 - **A new track every day.** The date seeds a procedural generator, so everyone gets the same track.
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
 - **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
+- **Feel the speed.** A fading racing line trails your car, coloured by speed (blue when slow, orange flat out). A speedometer sits at the bottom. The camera pulls back, wind streaks rush past and the edges darken as you approach top speed.
 - **About 10 seconds a lap.** Short enough to run it ten times in a coffee break.
 - **A starter ghost.** Every track comes with danger darrell, a below-average driver to race against your first time. Most players beat darrell within a few tries.
 - **Race your friends.** "Share best" sends a link that holds your whole lap. Your friend races your ghost, and everyone whose ghost you have shows up on the day's board.

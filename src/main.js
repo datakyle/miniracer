@@ -47,6 +47,12 @@ let lookOff = { x: 0, y: 0 };
 let skids = [];
 let sparks = [];
 let dust = [];
+// recent path of the car in view (the racing line), and the speed zoom
+let trail = [];
+let zoom = 1;
+const TRAIL_POINTS = 140;
+// display units: top speed 31 world units/s reads as ~280 km/h
+const KMH_PER_UNIT = 9;
 let dustTick = 0;
 let shake = 0;
 let splitMsg = null;
@@ -68,6 +74,7 @@ function startAttract() {
   attractFrame = 0;
   skids = [];
   dust = [];
+  trail = [];
   cam.x = attract.x;
   cam.y = attract.y;
   lookOff = { x: 0, y: 0 };
@@ -115,6 +122,7 @@ function startRace() {
   skids = [];
   sparks = [];
   dust = [];
+  trail = [];
   shake = 0;
   acc = 0;
   splitMsg = null;
@@ -161,6 +169,13 @@ input.onRestart(() => {
 
 // ---------- per-frame ----------
 
+function addTrail(s, frameNo) {
+  if (frameNo % 2) return;
+  const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+  trail.push({ x: s.x, y: s.y, sr: Math.min(1, speed / TUNING.maxSpeed) });
+  if (trail.length > TRAIL_POINTS) trail.splice(0, trail.length - TRAIL_POINTS);
+}
+
 function addSkids(s, p) {
   if (s.slip < 0.2) return;
   const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
@@ -194,6 +209,7 @@ function physicsStep() {
   const before = sim.nextCp;
   step(sim, steer);
   addSkids(sim, prev);
+  addTrail(sim, sim.frame);
 
   if (sim.wallHit > 2) {
     shake = Math.min(1.2, sim.wallHit * 0.06);
@@ -259,6 +275,7 @@ function frame(now) {
       step(attract, day.bot.inputs[attractFrame] ?? 0);
       attractFrame++;
       addSkids(attract, p);
+      addTrail(attract, attractFrame);
       if (attract.finished) startAttract();
     }
   }
@@ -296,7 +313,19 @@ function frame(now) {
     dust = dust.filter((d) => d.life > 0);
     shake *= Math.exp(-dt * 10);
 
+    const carSpeed = Math.sqrt(car.vx * car.vx + car.vy * car.vy);
+    const speedRatio = Math.min(1, carSpeed / TUNING.maxSpeed);
+    // pull the camera back as speed builds: more road ahead, more sense of pace
+    const targetZoom = mode === 'home' ? 1 : 1 - 0.16 * speedRatio * speedRatio;
+    zoom += (targetZoom - zoom) * (1 - Math.exp(-dt * 2.5));
+
     renderer.draw({
+      trail,
+      zoom,
+      dt,
+      speedRatio,
+      vel: { x: car.vx, y: car.vy },
+      racing: mode === 'racing',
       player: p,
       playerColor: PLAYER_COLOR,
       ghosts: mode === 'home' ? [] : ghosts.map((g) => {
@@ -311,8 +340,8 @@ function frame(now) {
       shake: shake > 0.02 ? shake : 0,
     });
 
-    const speed = Math.sqrt(car.vx * car.vx + car.vy * car.vy);
-    audio.update(mode === 'racing' || mode === 'countdown', speed / TUNING.maxSpeed, car.slip);
+    audio.update(mode === 'racing' || mode === 'countdown', speedRatio, car.slip);
+    if (mode === 'racing' || mode === 'countdown' || mode === 'finished') updateSpeedo(carSpeed, speedRatio);
   }
 
   if (mode === 'racing' || mode === 'countdown') {
@@ -329,6 +358,24 @@ function frame(now) {
   }
 
   requestAnimationFrame(frame);
+}
+
+// ---------- speedometer ----------
+
+const speedoEl = $('#speedo');
+const speedoNum = $('#speed-num');
+const speedoArc = $('#speed-arc');
+const ARC_LEN = 100; // the arc path uses pathLength="100"
+let shownSpeed = 0;
+
+function updateSpeedo(speed, ratio) {
+  if (!speedoEl) return;
+  // the number eases so it reads as a needle, not flicker
+  shownSpeed += (speed * KMH_PER_UNIT - shownSpeed) * 0.35;
+  speedoNum.textContent = String(Math.round(shownSpeed));
+  speedoArc.style.strokeDashoffset = String(ARC_LEN * (1 - ratio));
+  speedoEl.classList.toggle('hot', ratio > 0.86);
+  speedoEl.style.setProperty('--heat', ratio.toFixed(3));
 }
 
 // ---------- UI ----------
