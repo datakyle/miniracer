@@ -16,13 +16,47 @@ const CLEARANCE = HALF_WIDTH * 2 + 5;
 const MIN_LENGTH = 215;
 const MAX_LENGTH = 290;
 
-// Dark palettes. Visual only, but chosen by the seed so a day keeps its look.
+// Visual themes. Picked by the seed so a day keeps its look; the
+// simulation never reads them. Three road types, two colour variants each.
 export const THEMES = [
-  { id: 'graphite', bg: '#161618', bgDot: '#202023', road: '#2c2c2f', curbA: '#ababaf', curbB: '#3a3a3d', skid: 'rgba(0,0,0,0.45)', deco: '#1f1f22' },
-  { id: 'midnight', bg: '#11151d', bgDot: '#19202c', road: '#272d3a', curbA: '#8fa6c9', curbB: '#2f3850', skid: 'rgba(0,0,0,0.45)', deco: '#171d28' },
-  { id: 'moss', bg: '#111813', bgDot: '#18221b', road: '#282e2a', curbA: '#8fb29a', curbB: '#2c3a30', skid: 'rgba(0,0,0,0.45)', deco: '#16211a' },
-  { id: 'plum', bg: '#17131c', bgDot: '#211a28', road: '#2e2934', curbA: '#b39ac9', curbB: '#3a3045', skid: 'rgba(0,0,0,0.45)', deco: '#1f1826' },
-  { id: 'umber', bg: '#1a1612', bgDot: '#241e18', road: '#302a25', curbA: '#c4a483', curbB: '#3d342c', skid: 'rgba(0,0,0,0.45)', deco: '#221c16' },
+  {
+    id: 'circuit-red', kind: 'circuit',
+    bg: '#3f9e44', bgAlt: '#48aa4c', road: '#3b3f48', line: '#ffffff',
+    curbA: '#e8262b', curbB: '#ffffff', tree: '#21762c', treeLight: '#2f8f3a',
+    skid: 'rgba(10,10,14,0.45)',
+  },
+  {
+    id: 'circuit-blue', kind: 'circuit',
+    bg: '#56b04a', bgAlt: '#5fbb52', road: '#40444e', line: '#ffffff',
+    curbA: '#1f6bff', curbB: '#ffffff', tree: '#2c7f30', treeLight: '#3b9a3d',
+    skid: 'rgba(10,10,14,0.45)',
+  },
+  {
+    id: 'street-day', kind: 'street',
+    bg: '#c4c8d0', bgAlt: '#bcc0c9', road: '#30333b', line: '#ffffff', center: '#ffcc00',
+    sidewalk: '#e6e8ec', kerb: '#8e949e',
+    roofs: ['#ff6b6b', '#4dabf7', '#ffd43b', '#69db7c', '#b197fc', '#ff922b'],
+    tree: '#2f9e44', treeLight: '#40c057', skid: 'rgba(10,10,14,0.4)',
+  },
+  {
+    id: 'street-night', kind: 'street',
+    bg: '#171a2e', bgAlt: '#1b1f36', road: '#24273d', line: '#3ff0ff', center: '#ff3fa4',
+    sidewalk: '#30345a', kerb: '#5a5f96',
+    roofs: ['#ff3fa4', '#3ff0ff', '#ffe14d', '#8c5cff', '#39ff88', '#ff7b2e'],
+    tree: '#1d6b55', treeLight: '#26896d', skid: 'rgba(0,0,0,0.45)', neon: true,
+  },
+  {
+    id: 'dirt-forest', kind: 'dirt',
+    bg: '#5aa43a', bgAlt: '#62ad40', road: '#b5733e', roadLight: '#c98b55', rut: 'rgba(84,46,18,0.38)',
+    edge: 'rgba(80,46,20,0.55)', bale: '#f2c94c', baleDark: '#c99a2e', tree: '#2b7a2e', treeLight: '#3a9a3a',
+    dust: '201,150,98', skid: 'rgba(70,38,14,0.4)',
+  },
+  {
+    id: 'dirt-desert', kind: 'dirt',
+    bg: '#efc27c', bgAlt: '#e8b96f', road: '#c4602f', roadLight: '#d77a45', rut: 'rgba(100,36,12,0.38)',
+    edge: 'rgba(120,52,20,0.45)', bale: '#f7f1e3', baleDark: '#1d1d1f', tree: '#6f8f2e', treeLight: '#86a83a',
+    dust: '226,170,110', skid: 'rgba(110,40,12,0.38)', tires: true,
+  },
 ];
 
 const ADJ = ['velvet', 'copper', 'neon', 'quiet', 'lucky', 'crimson', 'paper', 'golden', 'hollow', 'salty', 'electric', 'rusty', 'misty', 'jade', 'amber', 'cobalt', 'lazy', 'wild', 'silver', 'sunny', 'tiny', 'grand', 'frosty', 'midnight'];

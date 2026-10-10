@@ -15,10 +15,10 @@ const input = createInput(canvas);
 const audio = createAudio();
 audio.setMuted(!store.sound);
 
-// the player is the warm amber; ghosts are quiet tints
-const PLAYER_COLOR = '#b8906a';
-const FRIEND_COLORS = ['#8fb4e0', '#c9a0dc', '#9fd0a8'];
-const STARTER_COLOR = '#e0b8a0';
+// the race itself is bright and readable; the menus keep the brand palette
+const PLAYER_COLOR = '#ff5a1f';
+const FRIEND_COLORS = ['#22b8ff', '#b85cff', '#2ee87a'];
+const STARTER_COLOR = '#ffd400';
 const MAX_FRIEND_GHOSTS = 3;
 const COUNTDOWN = 1.6;
 
@@ -46,6 +46,8 @@ let cam = { x: 0, y: 0 };
 let lookOff = { x: 0, y: 0 };
 let skids = [];
 let sparks = [];
+let dust = [];
+let dustTick = 0;
 let shake = 0;
 let splitMsg = null;
 let lastResult = null;
@@ -65,6 +67,7 @@ function startAttract() {
   attract = createSim(day.track);
   attractFrame = 0;
   skids = [];
+  dust = [];
   cam.x = attract.x;
   cam.y = attract.y;
   lookOff = { x: 0, y: 0 };
@@ -111,6 +114,7 @@ function startRace() {
   pbSplits = computeSplits(store.day(dateKey)?.inputs);
   skids = [];
   sparks = [];
+  dust = [];
   shake = 0;
   acc = 0;
   splitMsg = null;
@@ -161,6 +165,18 @@ function addSkids(s, p) {
   if (s.slip < 0.2) return;
   const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
   if (speed < 8) return;
+  // dirt tracks throw up dust from the rear wheels while sliding
+  if (renderer.kind() === 'dirt' && ++dustTick % 3 === 0) {
+    for (const side of [-0.6, 0.6]) {
+      dust.push({
+        x: s.x - s.hx * 1.1 - s.hy * side,
+        y: s.y - s.hy * 1.1 + s.hx * side,
+        r: 0.5,
+        life: Math.min(1, s.slip * 2),
+      });
+    }
+    if (dust.length > 240) dust.splice(0, dust.length - 240);
+  }
   for (const side of [-0.6, 0.6]) {
     const ax = p.x - p.hx * 0.75 - p.hy * side;
     const ay = p.y - p.hy * 0.75 + p.hx * side;
@@ -273,6 +289,11 @@ function frame(now) {
       sp.life -= dt * 2.5;
     }
     sparks = sparks.filter((sp) => sp.life > 0);
+    for (const d of dust) {
+      d.r += dt * 2.2;
+      d.life -= dt * 1.4;
+    }
+    dust = dust.filter((d) => d.life > 0);
     shake *= Math.exp(-dt * 10);
 
     renderer.draw({
@@ -286,6 +307,7 @@ function frame(now) {
       cam,
       skids,
       sparks,
+      dust,
       shake: shake > 0.02 ? shake : 0,
     });
 
