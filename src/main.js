@@ -43,6 +43,7 @@ let lastBeep = 0;
 let acc = 0;
 let prev = { x: 0, y: 0, hx: 1, hy: 0 };
 let cam = { x: 0, y: 0 };
+let lookOff = { x: 0, y: 0 };
 let skids = [];
 let sparks = [];
 let shake = 0;
@@ -66,6 +67,7 @@ function startAttract() {
   skids = [];
   cam.x = attract.x;
   cam.y = attract.y;
+  lookOff = { x: 0, y: 0 };
 }
 
 // ---------- ghosts ----------
@@ -115,6 +117,7 @@ function startRace() {
   prev = { x: sim.x, y: sim.y, hx: sim.hx, hy: sim.hy };
   cam.x = sim.x;
   cam.y = sim.y;
+  lookOff = { x: 0, y: 0 };
   countdownLeft = COUNTDOWN;
   lastBeep = 4;
   mode = 'countdown';
@@ -255,12 +258,14 @@ function frame(now) {
           hy: prev.hy + (car.hy - prev.hy) * alpha,
         }
       : { x: car.x, y: car.y, hx: car.hx, hy: car.hy };
-    const look = mode === 'home' ? 0.25 : 0.42;
-    const tx = p.x + car.vx * look;
-    const ty = p.y + car.vy * look;
-    const k = 1 - Math.exp(-dt * 5);
-    cam.x += (tx - cam.x) * k;
-    cam.y += (ty - cam.y) * k;
+    // camera: locked to the car (no positional lag), with a look-ahead
+    // offset that eases toward the direction of travel
+    const look = mode === 'home' ? 0.25 : 0.3;
+    const k = 1 - Math.exp(-dt * 4);
+    lookOff.x += (car.vx * look - lookOff.x) * k;
+    lookOff.y += (car.vy * look - lookOff.y) * k;
+    cam.x = p.x + lookOff.x;
+    cam.y = p.y + lookOff.y;
 
     for (const sp of sparks) {
       sp.x += sp.vx * dt;

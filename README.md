@@ -81,11 +81,20 @@ GitHub Pages serves the `main` branch as-is (Settings → Pages → "Deploy from
 
 For other static hosts, either serve the repo root or run `npm run build` and upload `dist/`. Both work from any path.
 
+## Handling
+
+The car follows the "traction lerp" approach common in top-down racers (see the [KidsCanCode Godot car recipe](https://github.com/kidscancode/godot_recipes/blob/master/src-4/content/2D/car_steering.md)). Grip swings the car's velocity toward its nose while keeping its length. It doesn't delete the sideways part, so sliding keeps momentum.
+
+- **Instant steering.** The turn reaches full rate in about 40 ms and stops about 30 ms after release.
+- **Drift on demand.** Steering above `driftSpeed` drops to `driftGrip`, so the nose swings past the direction of travel and the car slides about 40°. Letting go or counter-steering snaps it back to full `grip` in about 0.2 s.
+- **Momentum.** A hard 90° drift keeps about 90% of top speed. `driftScrub` takes a little speed for wide slides, so a tidy line still wins.
+- **Camera.** The camera is locked to the car. Only the look-ahead eases, so the car never trails on screen.
+
 ## Tuning
 
-- Handling: `TUNING` in `src/core/sim.js`
+- Handling: `TUNING` in `src/core/sim.js` (see below)
 - Track shape and size: constants at the top of `src/core/track.js`
-- Lap length: `MIN_LENGTH` / `MAX_LENGTH` in `src/core/track.js` (175 to 235 units is about 9 to 11 s)
+- Lap length: `MIN_LENGTH` / `MAX_LENGTH` in `src/core/track.js` (215 to 290 units is about 9 to 11 s)
 - Starter ghost: `ROOKIE_NAME` in `src/core/day.js`, and the `slowdown` in `rookieLap` (`src/core/bot.js`)
 
 Changing any of these changes the tracks or the physics, so old challenge links stop

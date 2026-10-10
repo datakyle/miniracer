@@ -1,13 +1,17 @@
 // Car simulation. Fixed timestep, one input per step: -1 (left), 0, +1 (right).
 // Throttle is automatic; the only skill is when and how long to steer.
 //
-// Handling model (arcade, not a tyre model):
-//   - steering sets a target yaw rate, reduced at high speed
-//   - velocity is split into forward and sideways parts relative to the nose
-//   - grip bleeds the sideways part away each step; while steering the grip
-//     is a touch lower, so the rear steps out and the car drifts
-//   - sideways speed that grip removes is speed lost, so long hard turns are
-//     slow: the line matters more than reflexes
+// Handling model (arcade, after the top-down "traction lerp" approach used
+// in many 2D racers, e.g. the KidsCanCode Godot car recipe):
+//   - steering turns the nose almost instantly; no wind-up, no coasting
+//     turn after release
+//   - grip steers the velocity toward the nose while keeping its length, so
+//     sliding costs very little speed (momentum is kept, not scrubbed away)
+//   - steering at speed drops into a low-grip drift: the nose rotates past
+//     the direction of travel and the car slides; releasing (or
+//     counter-steering) snaps it back to full grip
+//   - a drift bleeds a little speed in proportion to the slide, so a clean
+//     line is still faster than a wild one
 //   - walls stop the car's motion into them and scrub speed, but never end
 //     the run
 //
@@ -23,13 +27,19 @@ export const MAX_FRAMES = HZ * 120;
 export const TUNING = Object.freeze({
   maxSpeed: 31,
   accel: 30,
-  turnRate: 3.9,
-  highSpeedTrim: 0.34,
-  yawResponse: 18,
-  yawRelax: 7,
-  grip: 3.2,
-  gripAtSpeed: 1.4,
-  steerGrip: 0.82,
+  // yaw rate (rad/s) at full steer, reached by rampSpeed, trimmed at top speed
+  turnRate: 3.4,
+  rampSpeed: 7,
+  highSpeedTrim: 0.12,
+  // how quickly the yaw rate follows the input (per second); high = crisp
+  yawResponse: 45,
+  // traction: how fast velocity swings toward the nose (per second)
+  grip: 11,
+  driftGrip: 3.6,
+  // drift kicks in when steering above this speed
+  driftSpeed: 15,
+  // speed lost per second per unit of slide (sin of slip angle) while drifting
+  driftScrub: 0.6,
   carRadius: 0.8,
   wallScrub: 0.55,
   wallBounce: 0.25,
@@ -46,6 +56,7 @@ export function createSim(track) {
     vx: 0,
     vy: 0,
     w: 0,
+    drifting: false,
     seg: track.startIdx,
     offset: 0,
     nextCp: 0,
@@ -97,10 +108,10 @@ export function step(state, input) {
   let speed = Math.sqrt(state.vx * state.vx + state.vy * state.vy);
   const sr = clamp(speed / T.maxSpeed, 0, 1);
 
-  // yaw
-  const targetW = steer * T.turnRate * (1 - T.highSpeedTrim * sr * sr);
+  // yaw: near-instant response, full rate once rolling, slightly calmer at top speed
+  const ramp = clamp(speed / T.rampSpeed, 0, 1);
+  const targetW = steer * T.turnRate * ramp * (1 - T.highSpeedTrim * sr * sr);
   state.w += (targetW - state.w) * clamp(T.yawResponse * DT, 0, 1);
-  if (steer === 0) state.w *= 1 - T.yawRelax * DT;
   const a = state.w * DT;
   const c = dcos(a);
   const s = dsin(a);
@@ -112,34 +123,47 @@ export function step(state, input) {
   state.hx = hx;
   state.hy = hy;
 
-  // split velocity into body frame
-  const sxv = -hy;
-  const syv = hx;
-  let fwd = state.vx * hx + state.vy * hy;
-  let lat = state.vx * sxv + state.vy * syv;
-
-  const slip = speed > 0.5 ? Math.abs(lat) / speed : 0;
+  // slide: sin of the angle between nose and travel (signed: + = travel left of nose)
+  const cross = speed > 0.5 ? (hx * state.vy - hy * state.vx) / speed : 0;
+  const slip = Math.abs(cross);
   state.slip = slip;
 
-  // auto throttle, tapering toward top speed; no extra push while sliding hard
+  // drift state: steering at speed. Counter-steering (input against the
+  // slide) or letting go hands control back to full grip.
+  const counter = steer !== 0 && steer * cross > 0;
+  state.drifting = steer !== 0 && !counter && speed > T.driftSpeed;
+
+  // traction: swing velocity toward the nose, keeping its length
+  const traction = state.drifting ? T.driftGrip : T.grip;
+  const k = clamp(traction * DT, 0, 1);
+  let vx = state.vx + (hx * speed - state.vx) * k;
+  let vy = state.vy + (hy * speed - state.vy) * k;
+  let v = Math.sqrt(vx * vx + vy * vy);
+  if (v > 1e-9) {
+    // the lerp shortens the vector a touch on a big swing; restore it so
+    // grip never acts as a brake
+    vx = (vx / v) * speed;
+    vy = (vy / v) * speed;
+  }
+
+  // auto throttle along the nose, tapering toward top speed
+  let newSpeed = speed;
   if (speed < T.maxSpeed) {
-    const drive = T.accel * (1 - sr * sr) * (1 - clamp(slip * 2.5, 0, 0.85));
-    fwd += drive * DT;
+    const push = T.accel * (1 - sr * sr) * DT;
+    vx += hx * push;
+    vy += hy * push;
+    newSpeed = Math.sqrt(vx * vx + vy * vy);
   }
-  if (fwd < 0) fwd = Math.min(0, fwd + 20 * DT);
-
-  const grip = (T.grip + T.gripAtSpeed * sr * sr) * (steer === 0 ? 1 : T.steerGrip);
-  lat *= 1 - clamp(grip * DT, 0, 1);
-
-  state.vx = hx * fwd + sxv * lat;
-  state.vy = hy * fwd + syv * lat;
-
-  speed = Math.sqrt(state.vx * state.vx + state.vy * state.vy);
-  if (speed > T.maxSpeed) {
-    const k = T.maxSpeed / speed;
-    state.vx *= k;
-    state.vy *= k;
+  // a drift costs a little speed, more the wider the slide
+  if (state.drifting) newSpeed *= 1 - T.driftScrub * slip * DT;
+  newSpeed = Math.min(newSpeed, T.maxSpeed);
+  v = Math.sqrt(vx * vx + vy * vy);
+  if (v > 1e-9) {
+    vx = (vx / v) * newSpeed;
+    vy = (vy / v) * newSpeed;
   }
+  state.vx = vx;
+  state.vy = vy;
 
   const px = state.x;
   const py = state.y;
