@@ -9,7 +9,7 @@ import { timeMs } from './sim.js';
 export const EPOCH = '2026-10-10';
 // The starter ghost's name. Below average on purpose: most players beat
 // them within a few tries.
-export const ROOKIE_NAME = 'Danger Darrell';
+export const ROOKIE_NAME = 'danger darrell';
 
 export function dateKeyFromDate(d) {
   const y = d.getFullYear();
