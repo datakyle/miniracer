@@ -52,8 +52,8 @@ export function bestBotLap(track) {
 export function rookieLap(track, refTime, slowdown = 1.3) {
   const target = refTime * slowdown;
   let best = null;
-  for (const delay of [10, 14, 18, 22]) {
-    for (const dead of [0.15, 0.25, 0.35]) {
+  for (const delay of [10, 14, 18, 22, 26, 30]) {
+    for (const dead of [0.15, 0.25, 0.35, 0.45]) {
       for (const look of [4, 6, 8]) {
         const r = drive(track, look, dead, 0, delay);
         if (!r.finished) continue;

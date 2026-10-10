@@ -9,9 +9,9 @@
 import { createRng, hashString } from './rng.js';
 import { dsin, dcos, TWO_PI } from './dmath.js';
 
-export const HALF_WIDTH = 4;
+export const HALF_WIDTH = 5.5;
 export const SPACING = 1.5;
-const MIN_RADIUS = 7.5;
+const MIN_RADIUS = 9;
 const CLEARANCE = HALF_WIDTH * 2 + 5;
 const MIN_LENGTH = 215;
 const MAX_LENGTH = 290;
