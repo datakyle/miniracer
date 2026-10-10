@@ -2,6 +2,10 @@
 
 A two-minute daily habit: one lap, one new track, and a link that lets a friend race your exact lap. It runs in a phone browser. No login, no app, no server.
 
+### [Play today's lap → datakyle.github.io/miniracer](https://datakyle.github.io/miniracer/)
+
+Open it on your phone. Hold the left or right side of the screen to steer. When you finish, tap **Share best** and send the link to a friend. They race your ghost on the same track.
+
 - **A new track every day.** The date seeds a procedural generator, so everyone gets the same track.
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
 - **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
@@ -65,10 +69,13 @@ npm run build      # static site in dist/
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to
-`main`. To turn it on, go to Settings → Pages → Source and choose "GitHub Actions". Pages
-on a private repo needs a paid plan. Otherwise, make the repo public, or drop `dist/` on
-any static host (Netlify, Vercel, Cloudflare Pages).
+The game is live at **https://datakyle.github.io/miniracer/**.
+
+`.github/workflows/deploy.yml` runs the tests, builds the site and publishes it to GitHub Pages on every push to `main`. You can also run it by hand from the Actions tab ("deploy" → "Run workflow").
+
+One-time setup: in **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**. Don't use "Deploy from a branch". That mode serves the raw source, and the game needs the build step to run.
+
+To host somewhere else, run `npm run build` and upload `dist/` to any static host (Netlify, Vercel, Cloudflare Pages). It works from any path.
 
 ## Tuning
 
