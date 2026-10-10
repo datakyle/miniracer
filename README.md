@@ -64,18 +64,18 @@ src/main.js      game loop, screens
 npm install
 npm run dev        # http://localhost:5173  (add ?bot to let the bot drive, dev only)
 npm test
-npm run build      # static site in dist/
+npm run build      # optional: minified static site in dist/
 ```
 
 ## Deploy
 
 The game is live at **https://datakyle.github.io/miniracer/**.
 
-`.github/workflows/deploy.yml` runs the tests, builds the site and publishes it to GitHub Pages on every push to `main`. You can also run it by hand from the Actions tab ("deploy" → "Run workflow").
+GitHub Pages serves the `main` branch as-is (Settings → Pages → "Deploy from a branch", `main`, `/ (root)`). The source is plain ES modules with relative paths, so it runs in the browser with no build step: every push to `main` is live a minute later. `.nojekyll` stops Pages from running Jekyll on it.
 
-One-time setup: in **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**. Don't use "Deploy from a branch". That mode serves the raw source, and the game needs the build step to run.
+`.github/workflows/ci.yml` runs the tests and a Vite build on every push, so a broken change shows up as a red check.
 
-To host somewhere else, run `npm run build` and upload `dist/` to any static host (Netlify, Vercel, Cloudflare Pages). It works from any path.
+For other static hosts, either serve the repo root or run `npm run build` and upload `dist/`. Both work from any path.
 
 ## Tuning
 

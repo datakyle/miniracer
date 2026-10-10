@@ -1,4 +1,3 @@
-import './styles.css';
 import { buildDay, dateKeyFromDate, medalFor } from './core/day.js';
 import { createSim, step, DT, MAX_FRAMES, TUNING, timeMs } from './core/sim.js';
 import { encodeInputs, decodeInputs } from './core/replay.js';
@@ -21,7 +20,7 @@ const FRIEND_COLORS = ['#8fb4e0', '#c9a0dc', '#9fd0a8', '#e0b8a0'];
 const COUNTDOWN = 1.6;
 
 // dev only: ?bot drives the player's car with the bot lap (for testing)
-const devBot = import.meta.env.DEV && new URLSearchParams(location.search).has('bot');
+const devBot = Boolean(import.meta.env?.DEV) && new URLSearchParams(location.search).has('bot');
 
 const todayKey = dateKeyFromDate(new Date());
 prune(todayKey);
