@@ -1,0 +1,629 @@
+/* Kyle Bautista design language, dark inversion.
+   Surfaces carry the depth. Blue is the only action color. One warm dot per
+   screen (the brand mark), and the player's car is the same warm amber. */
+
+:root {
+  --bg: #161618;
+  --dark: #1d1d1f;
+  --surface: rgba(29, 29, 31, 0.94);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --on-dark: #ffffff;
+  --on-dark-2: #ababaf;
+  --muted: #86868b;
+  --blue: #0d74ce;
+  --blue-dk: #0858a8;
+  --blue-text: #4ea1ea;
+  --warm: #b8906a;
+  --ahead: #8fc9a3;
+  --behind: #d99a8e;
+  --gold: #d4b46a;
+  --silver: #c7c7cc;
+  --bronze: #a8795a;
+  --text: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--on-dark);
+  font-family: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: block;
+  touch-action: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+
+/* ---------- panels ---------- */
+
+.panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 15%, rgba(0, 0, 0, 0.55));
+  overflow-y: auto;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+@media (min-height: 760px) {
+  .panel {
+    align-items: center;
+  }
+}
+
+.card {
+  width: min(420px, 100%);
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  animation: rise 0.22s ease-out;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warm);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  color: var(--on-dark-2);
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.eyebrow,
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.eyebrow {
+  margin-top: 20px;
+}
+
+.eyebrow a {
+  color: var(--blue-text);
+  text-decoration: none;
+}
+
+.preview {
+  width: 100%;
+  height: 150px;
+  display: block;
+  margin: 12px 0 0;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+
+h1 {
+  margin: 20px 0 16px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.medals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.medal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.medal.earned {
+  color: var(--on-dark);
+  background: var(--surface-2);
+}
+
+.mdot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.mdot.gold {
+  background: var(--gold);
+}
+
+.mdot.silver {
+  background: var(--silver);
+}
+
+.mdot.bronze {
+  background: var(--bronze);
+}
+
+.pb {
+  margin: 16px 0 0;
+  color: var(--on-dark-2);
+}
+
+.pb b {
+  color: var(--on-dark);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge {
+  margin: 16px 0 0;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+}
+
+.challenge b {
+  font-weight: 600;
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-dark-2);
+  border: 1px solid var(--hairline);
+  vertical-align: 1px;
+}
+
+.muted {
+  color: var(--on-dark-2);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.board {
+  margin-top: 20px;
+}
+
+.board .label {
+  margin-bottom: 4px;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--on-dark-2);
+}
+
+.board-row:last-child {
+  border-bottom: 0;
+}
+
+.board-row b {
+  color: var(--on-dark);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-row.me span:nth-child(2) {
+  color: var(--on-dark);
+}
+
+/* buttons: primary is blue fill, secondary is the ghost style */
+
+.primary,
+.secondary {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  margin-top: 20px;
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.primary:hover,
+.primary:active {
+  background: var(--blue-dk);
+}
+
+.secondary {
+  color: var(--blue-text);
+  border: 1px solid var(--blue);
+}
+
+.secondary:hover,
+.secondary:active {
+  background: rgba(13, 116, 206, 0.12);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.stack .secondary {
+  margin-top: 8px;
+}
+
+.link {
+  display: block;
+  margin: 12px auto 0;
+  color: var(--on-dark-2);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+}
+
+.how {
+  font-size: 14px;
+  color: var(--on-dark-2);
+  margin: 20px 0 0;
+}
+
+.how b {
+  color: var(--on-dark);
+  font-weight: 600;
+}
+
+.foot,
+.hint-keys {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+@media (pointer: coarse) {
+  .hint-keys {
+    display: none;
+  }
+}
+
+.result {
+  font-size: 56px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 12px 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sub {
+  color: var(--on-dark-2);
+}
+
+.ahead {
+  color: var(--ahead);
+}
+
+.behind {
+  color: var(--behind);
+}
+
+.medal-big {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.medal-big .mdot {
+  width: 10px;
+  height: 10px;
+}
+
+.vs {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+  color: var(--on-dark-2);
+  font-size: 14px;
+}
+
+.vs b {
+  color: var(--on-dark);
+  font-weight: 600;
+}
+
+.name-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.name-row[hidden] {
+  display: none;
+}
+
+.name-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--on-dark);
+  font: inherit;
+  font-size: 16px;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.name-row input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.name-row .primary {
+  width: auto;
+  margin-top: 0;
+}
+
+/* ---------- hud ---------- */
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#hud[hidden] {
+  display: none;
+}
+
+.hud-top {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.hud-btn {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--on-dark-2);
+}
+
+.hud-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.timer {
+  text-align: center;
+}
+
+#time {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  padding: 6px 14px;
+  border-radius: var(--r-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+#split {
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+#countdown {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 88px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--on-dark);
+}
+
+.pad {
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(29, 29, 31, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--on-dark-2);
+  transition: background 0.06s, transform 0.06s;
+}
+
+.pad svg {
+  width: 26px;
+  height: 26px;
+}
+
+.pad.on {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-dark);
+  transform: scale(0.95);
+}
+
+#pad-left {
+  left: 20px;
+}
+
+#pad-right {
+  right: 20px;
+}
+
+@media (pointer: fine) {
+  .pad {
+    display: none;
+  }
+}
+
+.first-hint {
+  display: none;
+  position: absolute;
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: 500;
+  color: var(--on-dark-2);
+}
+
+body.first-time .first-hint {
+  display: block;
+  animation: fade 4s forwards;
+}
+
+@keyframes fade {
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 120px);
+  background: var(--dark);
+  border: 1px solid var(--hairline);
+  color: var(--on-dark);
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  transition: transform 0.25s;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#toast.show {
+  transform: translate(-50%, 0);
+}

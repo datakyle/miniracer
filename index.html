@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#161618" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="One lap. A new track every day. Race your friends' ghosts. No login." />
+    <meta property="og:title" content="Daily lap" />
+    <meta property="og:description" content="One lap. A new track every day. Can you beat my time?" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>" />
+    <title>Daily lap</title>
+  </head>
+  <body data-mode="home">
+    <canvas id="game"></canvas>
+
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <button class="hud-btn" id="btn-quit" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <div class="timer">
+          <div id="time">0.000</div>
+          <div id="split"></div>
+        </div>
+        <button class="hud-btn" id="btn-restart" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+      </div>
+      <div id="countdown"></div>
+      <div class="pad" id="pad-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+      <div class="pad" id="pad-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></div>
+      <div class="first-hint">Hold left or right to steer</div>
+    </div>
+
+    <section id="home" class="panel"></section>
+    <section id="finish" class="panel" hidden></section>
+    <div id="toast"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
