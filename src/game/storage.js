@@ -1,7 +1,7 @@
 // Everything lives in localStorage. No accounts.
 
 // bump when tracks or physics change: saved laps only replay on the track they were driven on
-const KEY = 'dailylap:v4';
+const KEY = 'dailylap:v5';
 const KEEP_DAYS = 45;
 
 function blank() {

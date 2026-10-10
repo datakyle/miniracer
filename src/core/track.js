@@ -47,14 +47,14 @@ export const THEMES = [
   },
   {
     id: 'dirt-forest', kind: 'dirt',
-    bg: '#5aa43a', bgAlt: '#62ad40', road: '#b5733e', roadLight: '#c98b55', rut: 'rgba(84,46,18,0.38)',
-    edge: 'rgba(80,46,20,0.55)', bale: '#f2c94c', baleDark: '#c99a2e', tree: '#2b7a2e', treeLight: '#3a9a3a',
+    bg: '#5aa43a', bgAlt: '#62ad40', road: '#b5733e', rut: 'rgba(84,46,18,0.2)',
+    edge: 'rgba(80,46,20,0.35)', bale: '#f2c94c', baleDark: '#c99a2e', tree: '#2b7a2e', treeLight: '#3a9a3a',
     dust: '201,150,98', skid: 'rgba(70,38,14,0.4)',
   },
   {
     id: 'dirt-desert', kind: 'dirt',
-    bg: '#efc27c', bgAlt: '#e8b96f', road: '#c4602f', roadLight: '#d77a45', rut: 'rgba(100,36,12,0.38)',
-    edge: 'rgba(120,52,20,0.45)', bale: '#f7f1e3', baleDark: '#1d1d1f', tree: '#6f8f2e', treeLight: '#86a83a',
+    bg: '#efc27c', bgAlt: '#e8b96f', road: '#c4602f', rut: 'rgba(100,36,12,0.2)',
+    edge: 'rgba(120,52,20,0.3)', bale: '#f7f1e3', baleDark: '#1d1d1f', tree: '#6f8f2e', treeLight: '#86a83a',
     dust: '226,170,110', skid: 'rgba(110,40,12,0.38)', tires: true,
   },
 ];

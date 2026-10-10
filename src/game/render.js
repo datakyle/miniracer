@@ -152,11 +152,11 @@ function buildScenery(track, f, mask) {
 
   if (theme.kind === 'dirt') {
     // hay bales (or tyre stacks) on the outside of corners
-    for (let i = 0; i < track.n; i += 2) {
+    for (let i = 0; i < track.n; i += 4) {
       const m = mask[i];
       if (!m) continue;
       const side = m === 1 ? -1 : 1;
-      const d = hw + 1.3;
+      const d = hw + 2;
       out.bales.push({
         x: track.xs[i] + f.nx[i] * d * side,
         y: track.ys[i] + f.ny[i] * d * side,
@@ -359,18 +359,15 @@ function drawRoad(ctx, track, g, theme) {
   }
 
   if (theme.kind === 'dirt') {
-    // soft churned edge, the track worn lighter down the middle, and ruts
+    // a thin churned edge, the full-width track, and faint ruts
     ctx.strokeStyle = theme.edge;
-    ctx.lineWidth = w + 2.4;
+    ctx.lineWidth = w + 0.7;
     ctx.stroke(g.center);
     ctx.strokeStyle = theme.road;
     ctx.lineWidth = w;
     ctx.stroke(g.center);
-    ctx.strokeStyle = theme.roadLight;
-    ctx.lineWidth = w * 0.45;
-    ctx.stroke(g.center);
     ctx.strokeStyle = theme.rut;
-    ctx.lineWidth = 0.9;
+    ctx.lineWidth = 0.6;
     ctx.stroke(g.rutL);
     ctx.stroke(g.rutR);
     return;
@@ -461,8 +458,6 @@ export function createRenderer(canvas) {
   let dpr = 1;
   let cssW = 0;
   let cssH = 0;
-  // screen-space wind streaks (css px)
-  let streaks = [];
   let vignette = null;
 
   function resize() {
@@ -512,49 +507,10 @@ export function createRenderer(canvas) {
     return Math.max(7, Math.min(16, short / 36));
   }
 
-  // speed effects drawn over the world, in screen space
+  // speed effect drawn over the world, in screen space
   function drawSpeedFx(view) {
     const sr = view.speedRatio || 0;
-    const dt = view.dt || 0;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    // wind streaks rush past the edges once the car is really moving
-    const len = Math.hypot(view.vel?.x || 0, view.vel?.y || 0) || 1;
-    const dx = -(view.vel?.x || 0) / len;
-    const dy = -(view.vel?.y || 0) / len;
-    const intensity = Math.max(0, (sr - 0.55) / 0.45);
-    if (view.racing && intensity > 0) {
-      const rate = intensity * 120 * dt;
-      const count = Math.floor(rate) + (Math.random() < rate - Math.floor(rate) ? 1 : 0);
-      for (let k = 0; k < count; k++) {
-        // keep the middle clear: streaks live in an outer ring of the screen
-        const ang = Math.random() * Math.PI * 2;
-        const rx = cssW * (0.32 + Math.random() * 0.3);
-        const ry = cssH * (0.32 + Math.random() * 0.3);
-        streaks.push({
-          x: cssW / 2 + Math.cos(ang) * rx,
-          y: cssH / 2 + Math.sin(ang) * ry,
-          life: 1,
-          len: 40 + 90 * intensity * Math.random(),
-        });
-      }
-    }
-    const pxSpeed = 1400 * (0.5 + sr);
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 2.2;
-    for (const st of streaks) {
-      st.x += dx * pxSpeed * dt;
-      st.y += dy * pxSpeed * dt;
-      st.life -= dt * 3.2;
-      if (st.life <= 0) continue;
-      ctx.strokeStyle = `rgba(255,255,255,${(0.5 * st.life * Math.max(intensity, 0.3)).toFixed(3)})`;
-      ctx.beginPath();
-      ctx.moveTo(st.x, st.y);
-      ctx.lineTo(st.x - dx * st.len, st.y - dy * st.len);
-      ctx.stroke();
-    }
-    streaks = streaks.filter((st) => st.life > 0 && st.x > -200 && st.x < cssW + 200 && st.y > -200 && st.y < cssH + 200);
-    if (!view.racing) streaks.length = 0;
 
     // edges darken a little at top speed (tunnel vision)
     const v = Math.max(0, (sr - 0.6) / 0.4);

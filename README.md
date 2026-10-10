@@ -11,7 +11,7 @@ Open it on your phone. Hold the left or right side of the screen to steer. When 
 - **A new track every day.** The date seeds a procedural generator, so everyone gets the same track.
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
 - **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
-- **Feel the speed.** A fading racing line trails your car, coloured by speed (blue when slow, orange flat out). A speedometer sits at the bottom. The camera pulls back, wind streaks rush past and the edges darken as you approach top speed.
+- **Feel the speed.** A fading racing line trails your car, coloured by speed (blue when slow, orange flat out). A speedometer sits at the bottom. The camera pulls back and the edges darken slightly as you approach top speed.
 - **About 10 seconds a lap.** Short enough to run it ten times in a coffee break.
 - **A starter ghost.** Every track comes with danger darrell, a below-average driver to race against your first time. Most players beat darrell within a few tries.
 - **Race your friends.** "Share best" sends a link that holds your whole lap. Your friend races your ghost, and everyone whose ghost you have shows up on the day's board.
@@ -44,7 +44,7 @@ This is the dark inversion of the Kyle Bautista design language: Inter at 400/50
 
 - **Circuit:** striped grass, white edge lines, red/white or blue/white curbs on the corners, and a grandstand by the start.
 - **Street:** city blocks, sidewalks, white lane edges and a dashed centre line, in a day or neon-night version.
-- **Dirt:** a brown or red-clay track with ruts, hay bales or tyre stacks on the outside of corners, and dust when you slide.
+- **Dirt:** a brown or red-clay track with faint ruts, scattered hay bales or tyre stacks outside the corners, and dust when you slide.
 
 The player's car is bright orange with a white outline. Ghosts are vivid colours at about half opacity.
 

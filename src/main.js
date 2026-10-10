@@ -322,9 +322,7 @@ function frame(now) {
     renderer.draw({
       trail,
       zoom,
-      dt,
       speedRatio,
-      vel: { x: car.vx, y: car.vy },
       racing: mode === 'racing',
       player: p,
       playerColor: PLAYER_COLOR,

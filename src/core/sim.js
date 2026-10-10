@@ -25,8 +25,8 @@ export const DT = 1 / HZ;
 export const MAX_FRAMES = HZ * 120;
 
 export const TUNING = Object.freeze({
-  maxSpeed: 31,
-  accel: 30,
+  maxSpeed: 34,
+  accel: 33,
   // yaw rate (rad/s) at full steer, reached by rampSpeed, trimmed at top speed
   turnRate: 3.4,
   rampSpeed: 7,
