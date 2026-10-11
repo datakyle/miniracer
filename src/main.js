@@ -8,6 +8,7 @@ import { store, prune } from './game/storage.js';
 import { listGhosts, pickRivals, submitRun } from './game/ghosts.js';
 import { cloudEnabled, initCrew, crew, refreshBoard, uploadBest } from './game/cloud.js';
 import { cleanCrew, DEFAULT_CREW } from './core/names.js';
+import { TRIES_PER_DAY } from './config.js';
 import { parseChallenge, challengeUrl, shareText, shareRun, fmt, fmtDelta, cleanName, capitalize } from './game/share.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -117,7 +118,15 @@ function computeSplits(encoded) {
 
 // ---------- race flow ----------
 
+function triesLeft() {
+  return Math.max(0, TRIES_PER_DAY - store.triesUsed(dateKey));
+}
+
 function startRace() {
+  if (triesLeft() <= 0) {
+    toast(`No tries left today. New track in ${timeToMidnight()}.`);
+    return;
+  }
   audio.unlock();
   sim = createSim(day.track);
   inputs = [];
@@ -141,6 +150,10 @@ function startRace() {
   show('hud');
   $('#time').textContent = fmt(0);
   $('#split').textContent = '';
+  const n = TRIES_PER_DAY - triesLeft() + 1;
+  $('#tries').textContent = `Try ${n} of ${TRIES_PER_DAY}`;
+  // restarting would use another try; hide it when this is the last one
+  $('#btn-restart').hidden = n >= TRIES_PER_DAY;
   document.body.classList.toggle('first-time', !store.day(dateKey)?.runs);
 }
 
@@ -177,7 +190,7 @@ async function refreshHome(maxAgeMs = 15000) {
 }
 
 input.onRestart(() => {
-  if (mode !== 'home') startRace();
+  if (mode === 'countdown' || mode === 'racing' || mode === 'finished') startRace();
 });
 
 // ---------- per-frame ----------
@@ -267,6 +280,8 @@ function frame(now) {
       }, 450);
       mode = 'racing';
       acc = 0;
+      // the try counts once the light goes green
+      store.useTry(dateKey);
     }
   } else if (mode === 'racing') {
     acc += dt;
@@ -428,6 +443,15 @@ function ghostBoard() {
     .join('')}${rows.length > shown.length ? `<div class="board-more">${rows.length} racers today</div>` : ''}</div>`;
 }
 
+// the main race button, showing tries left; disabled once they're used up
+function raceButton(id, label) {
+  const left = triesLeft();
+  if (left <= 0) {
+    return `<button class="primary" id="${id}" disabled>Out of tries · new track in ${timeToMidnight()}</button>`;
+  }
+  return `<button class="primary" id="${id}">${label} <span class="tries-left">· ${left} ${left === 1 ? 'try' : 'tries'} left</span></button>`;
+}
+
 function canUpload() {
   const best = store.day(dateKey)?.best ?? null;
   // the server takes laps for today and yesterday (Central)
@@ -450,7 +474,6 @@ function renderHome() {
     </div>`;
   }
 
-  const runs = mine?.runs ?? 0;
   $('#home').innerHTML = `
     <div class="card">
       <div class="top">
@@ -461,12 +484,12 @@ function renderHome() {
       <canvas class="preview" id="preview"></canvas>
       <h1>${esc(capitalize(day.track.name))}</h1>
       <div class="pb">${best != null
-        ? `Your best <b>${fmt(best)}</b>. ${runs} run${runs === 1 ? '' : 's'}.`
+        ? `Your best <b>${fmt(best)}</b>. ${Math.min(store.triesUsed(dateKey), TRIES_PER_DAY)} of ${TRIES_PER_DAY} tries used.`
         : `No lap yet today. Beat ${esc(day.rookie.name)}'s <b>${fmt(day.rookie.ms)}</b>.`}${streak > 1 ? ` ${streak} days in a row.` : ''}</div>
       ${challengeHtml}
       ${ghostBoard()}
       <div class="stack">
-        <button class="primary" id="btn-race">${best != null ? 'Race again' : 'Race'}</button>
+        ${raceButton('btn-race', best != null ? 'Race again' : 'Race')}
         ${best != null ? `<div class="row">
           ${canUpload() ? '<button class="secondary" id="btn-upload-home">Upload ghost</button>' : ''}
           <button class="secondary" id="btn-share-home">Share link</button>
@@ -476,7 +499,8 @@ function renderHome() {
       <div class="foot">${isToday ? `New track in ${timeToMidnight()}` : `Track from ${prettyDate(dateKey)}`}${cloudEnabled ? ` · Crew: ${esc(crew())} <a href="#" id="btn-crew">change</a>` : ''}</div>
     </div>`;
   drawPreview($('#preview'), day.track, { road: '#2c2c2f', edge: 'rgba(255,255,255,0.55)', arrow: '#ababaf' });
-  $('#btn-race').onclick = startRace;
+  const rb = $('#btn-race');
+  if (!rb.disabled) rb.onclick = startRace;
   $('#btn-sound').onclick = () => {
     store.sound = !store.sound;
     audio.setMuted(!store.sound);
@@ -539,7 +563,7 @@ function renderFinish() {
       <div class="result">${headline}</div>
       <div class="sub">${sub}</div>
       ${vs}
-      <button class="primary" id="btn-again">Race again</button>
+      ${raceButton('btn-again', 'Race again')}
       ${best != null ? `<div class="row">
         ${cloudEnabled ? `<button class="secondary" id="btn-upload" ${canUpload() ? '' : 'disabled'}>${canUpload() ? 'Upload ghost' : 'Ghost uploaded'}</button>` : ''}
         <button class="secondary" id="btn-share">Share link</button>
@@ -551,7 +575,8 @@ function renderFinish() {
       <button class="link" id="btn-home">Menu</button>
       <div class="hint-keys">Press R to restart anytime.</div>
     </div>`;
-  $('#btn-again').onclick = startRace;
+  const ab = $('#btn-again');
+  if (!ab.disabled) ab.onclick = startRace;
   $('#btn-home').onclick = goHome;
   const sh = $('#btn-share');
   if (sh) sh.onclick = () => doShare(sh);

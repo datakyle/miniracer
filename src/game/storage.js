@@ -128,6 +128,18 @@ export const store = {
     save();
     return isBest;
   },
+  // tries started on a day (laps begun, finished or not). Days played
+  // before tries existed count their finished laps.
+  triesUsed(dateKey) {
+    const d = data.days[dateKey];
+    return d ? d.starts ?? d.runs ?? 0 : 0;
+  },
+  useTry(dateKey) {
+    const d = data.days[dateKey] || { best: null, inputs: null, runs: 0 };
+    d.starts = (d.starts ?? d.runs ?? 0) + 1;
+    data.days[dateKey] = d;
+    save();
+  },
   markPlayed(dateKey) {
     const d = data.days[dateKey] || { best: null, inputs: null, runs: 0 };
     data.days[dateKey] = d;

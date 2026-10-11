@@ -10,7 +10,7 @@ Open it on your phone. Hold the left or right side of the screen to steer. When 
 
 - **A new track every day.** The date seeds a procedural generator, so everyone gets the same track.
 - **Two buttons.** Hold the left or right half of the screen (or ← → / A D). The car drives itself, and steering hard makes it slide.
-- **One lap.** Walls slow you down but never end the run. Press ↺ (or R) to restart at any time.
+- **Five tries a day.** One lap per try, and your best counts. A try is used when the light goes green, so backing out during the countdown is free, but restarting mid-lap (↺ or R) uses a try. Walls slow you down but never end a run. The limit is `TRIES_PER_DAY` in `src/config.js`. It's enforced in the browser, so it's an honour system, not anti-cheat.
 - **Feel the speed.** A fading racing line trails your car, coloured by speed (blue when slow, orange flat out). A speedometer sits at the bottom. The camera pulls back and the edges darken slightly as you approach top speed.
 - **About 10 seconds a lap.** Short enough to run it ten times in a coffee break.
 - **A starter ghost.** Every track comes with danger darrell, a below-average driver to race against your first time. Most players beat darrell within a few tries.

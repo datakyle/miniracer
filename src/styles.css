@@ -262,6 +262,32 @@ h1 {
   text-decoration: none;
 }
 
+.primary:disabled {
+  background: var(--surface-2);
+  color: var(--on-dark-2);
+  cursor: default;
+}
+
+.tries-left {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+#tries {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.hud-btn[hidden] {
+  visibility: hidden;
+  display: grid;
+}
+
 .secondary:disabled {
   opacity: 0.55;
   cursor: default;
