@@ -6,6 +6,6 @@ compatibility_date = "2026-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "miniracer"
-# Paste the id printed by `npx wrangler d1 create miniracer` here.
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+# Created with `npx wrangler d1 create miniracer`.
+database_id = "5ab238d1-c419-43dd-8973-f3ccabb349da"
 migrations_dir = "migrations"
