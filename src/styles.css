@@ -251,6 +251,22 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.board-more {
+  padding-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.foot a {
+  color: var(--blue-text);
+  text-decoration: none;
+}
+
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .board-row.me span:nth-child(2) {
   color: var(--on-dark);
 }

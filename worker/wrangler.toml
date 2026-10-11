@@ -1,0 +1,11 @@
+# Ghost server for Daily lap. See ../README.md ("Shared ghosts") for setup.
+name = "miniracer-ghosts"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "miniracer"
+# Paste the id printed by `npx wrangler d1 create miniracer` here.
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"

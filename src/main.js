@@ -1,11 +1,13 @@
-import { buildDay, dateKeyFromDate } from './core/day.js';
+import { buildDay, dateKeyAt, msUntilNextDay, addDays } from './core/day.js';
 import { createSim, step, DT, MAX_FRAMES, TUNING, timeMs } from './core/sim.js';
 import { encodeInputs, decodeInputs } from './core/replay.js';
 import { createRenderer, drawPreview } from './game/render.js';
 import { createInput } from './game/input.js';
 import { createAudio } from './game/audio.js';
 import { store, prune } from './game/storage.js';
-import { listGhosts, submitRun } from './game/ghosts.js';
+import { listGhosts, pickRivals, submitRun } from './game/ghosts.js';
+import { cloudEnabled, initCrew, crew, refreshBoard, uploadBest } from './game/cloud.js';
+import { cleanCrew, DEFAULT_CREW } from './core/names.js';
 import { parseChallenge, challengeUrl, shareText, shareRun, fmt, fmtDelta, cleanName, capitalize } from './game/share.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -20,12 +22,14 @@ const PLAYER_COLOR = '#ff5a1f';
 const FRIEND_COLORS = ['#22b8ff', '#b85cff', '#2ee87a'];
 const STARTER_COLOR = '#ffd400';
 const MAX_FRIEND_GHOSTS = 3;
+const BOARD_ROWS = 10;
 const COUNTDOWN = 1.6;
 
 // dev only: ?bot drives the player's car with the bot lap (for testing)
 const devBot = Boolean(import.meta.env?.DEV) && new URLSearchParams(location.search).has('bot');
 
-const todayKey = dateKeyFromDate(new Date());
+// the day rolls over at midnight US Central for everyone (see core/day.js)
+const todayKey = dateKeyAt();
 prune(todayKey);
 
 let dateKey = todayKey;
@@ -84,7 +88,7 @@ function startAttract() {
 
 function buildGhosts() {
   const all = listGhosts(day);
-  const friends = all.filter((g) => g.kind === 'friend').slice(0, MAX_FRIEND_GHOSTS);
+  const friends = pickRivals(all, store.day(dateKey)?.best ?? null, MAX_FRIEND_GHOSTS);
   const picked = [
     ...all.filter((g) => g.kind === 'you' && store.ghost).map((g) => ({ ...g, label: 'best', color: '#ffffff' })),
     ...friends.map((g, i) => ({ ...g, label: g.name, color: FRIEND_COLORS[i % FRIEND_COLORS.length] })),
@@ -161,6 +165,15 @@ function goHome() {
   startAttract();
   renderHome();
   show('home');
+  refreshHome();
+}
+
+// pull the crew's board, then redraw the menu if we're still on it
+async function refreshHome(maxAgeMs = 15000) {
+  if (!cloudEnabled) return;
+  const before = dateKey;
+  await refreshBoard(dateKey, { maxAgeMs });
+  if (mode === 'home' && dateKey === before) renderHome();
 }
 
 input.onRestart(() => {
@@ -388,10 +401,9 @@ function prettyDate(key) {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// time until the next track (midnight US Central)
 function timeToMidnight() {
-  const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const mins = Math.max(0, Math.floor((next - now) / 60000));
+  const mins = Math.max(0, Math.floor(msUntilNextDay() / 60000));
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m`;
 }
 
@@ -403,12 +415,24 @@ function esc(s) {
 const ICON_SOUND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
 const ICON_SOUND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
 
-// everyone whose ghost you have for this day, fastest first
+// everyone whose ghost you have for this day, fastest first. Long boards
+// show the top rows plus your own.
 function ghostBoard() {
-  const rows = listGhosts(day);
-  return `<div class="board"><div class="label">Ghosts today</div>${rows
-    .map((g, i) => `<div class="board-row ${g.kind === 'you' ? 'me' : ''}"><span>${i + 1}</span><span>${esc(g.name)}${g.kind === 'you' && store.name ? ' (you)' : ''}</span><b>${fmt(g.ms)}</b></div>`)
-    .join('')}</div>`;
+  const rows = listGhosts(day).map((g, i) => ({ ...g, rank: i + 1 }));
+  let shown = rows.slice(0, BOARD_ROWS);
+  const me = rows.find((g) => g.kind === 'you');
+  if (me && me.rank > BOARD_ROWS) shown = shown.slice(0, BOARD_ROWS - 1).concat(me);
+  const title = crew() === DEFAULT_CREW ? 'Today' : `Today · ${esc(crew())}`;
+  return `<div class="board"><div class="label">${title}</div>${shown
+    .map((g) => `<div class="board-row ${g.kind === 'you' ? 'me' : ''}"><span>${g.rank}</span><span>${esc(g.name)}${g.kind === 'you' && store.name ? ' (you)' : ''}</span><b>${fmt(g.ms)}</b></div>`)
+    .join('')}${rows.length > shown.length ? `<div class="board-more">${rows.length} racers today</div>` : ''}</div>`;
+}
+
+function canUpload() {
+  const best = store.day(dateKey)?.best ?? null;
+  // the server takes laps for today and yesterday (Central)
+  const open = dateKey === todayKey || dateKey === addDays(todayKey, -1);
+  return cloudEnabled && open && best != null && store.uploaded(dateKey) !== best;
 }
 
 function renderHome() {
@@ -443,10 +467,13 @@ function renderHome() {
       ${ghostBoard()}
       <div class="stack">
         <button class="primary" id="btn-race">${best != null ? 'Race again' : 'Race'}</button>
-        ${best != null ? '<button class="secondary" id="btn-share-home">Share my best</button>' : ''}
+        ${best != null ? `<div class="row">
+          ${canUpload() ? '<button class="secondary" id="btn-upload-home">Upload ghost</button>' : ''}
+          <button class="secondary" id="btn-share-home">Share link</button>
+        </div>` : ''}
       </div>
       <p class="how">Hold the <b>left</b> or <b>right</b> side of the screen to steer, or use the arrow keys. The car drives itself. One lap, as fast as you can. Walls slow you down.</p>
-      <div class="foot">${isToday ? `New track in ${timeToMidnight()}` : `Track from ${prettyDate(dateKey)}`}</div>
+      <div class="foot">${isToday ? `New track in ${timeToMidnight()}` : `Track from ${prettyDate(dateKey)}`}${cloudEnabled ? ` · Crew: ${esc(crew())} <a href="#" id="btn-crew">change</a>` : ''}</div>
     </div>`;
   drawPreview($('#preview'), day.track, { road: '#2c2c2f', edge: 'rgba(255,255,255,0.55)', arrow: '#ababaf' });
   $('#btn-race').onclick = startRace;
@@ -458,6 +485,19 @@ function renderHome() {
   };
   const share = $('#btn-share-home');
   if (share) share.onclick = () => doShare(share);
+  const up = $('#btn-upload-home');
+  if (up) up.onclick = () => doUpload(up);
+  const cr = $('#btn-crew');
+  if (cr) {
+    cr.onclick = (e) => {
+      e.preventDefault();
+      const next = window.prompt('Crew code. Everyone with the same code shares a board. Leave empty for the public board.', crew() === DEFAULT_CREW ? '' : crew());
+      if (next === null) return;
+      store.crew = cleanCrew(next);
+      renderHome();
+      refreshHome(0);
+    };
+  }
   const gt = $('#go-today');
   if (gt) {
     gt.onclick = (e) => {
@@ -499,13 +539,14 @@ function renderFinish() {
       <div class="result">${headline}</div>
       <div class="sub">${sub}</div>
       ${vs}
-      <div class="row">
-        <button class="primary" id="btn-again">Race again</button>
-        ${best != null ? '<button class="secondary" id="btn-share">Share best</button>' : ''}
-      </div>
+      <button class="primary" id="btn-again">Race again</button>
+      ${best != null ? `<div class="row">
+        ${cloudEnabled ? `<button class="secondary" id="btn-upload" ${canUpload() ? '' : 'disabled'}>${canUpload() ? 'Upload ghost' : 'Ghost uploaded'}</button>` : ''}
+        <button class="secondary" id="btn-share">Share link</button>
+      </div>` : ''}
       <div class="name-row" id="name-row" hidden>
-        <input id="name-input" maxlength="14" placeholder="Your name (optional)" autocomplete="nickname" />
-        <button class="primary" id="btn-name-ok">Share</button>
+        <input id="name-input" maxlength="14" placeholder="Your name, shown to friends" autocomplete="nickname" />
+        <button class="primary" id="btn-name-ok">OK</button>
       </div>
       <button class="link" id="btn-home">Menu</button>
       <div class="hint-keys">Press R to restart anytime.</div>
@@ -514,30 +555,54 @@ function renderFinish() {
   $('#btn-home').onclick = goHome;
   const sh = $('#btn-share');
   if (sh) sh.onclick = () => doShare(sh);
+  const up = $('#btn-upload');
+  if (up && !up.disabled) up.onclick = () => doUpload(up);
+}
+
+// asks for a display name once (inline on the finish screen, else a prompt)
+function withName(then) {
+  if (store.name) return then();
+  const row = $('#name-row');
+  if (row && !$('#finish').hidden) {
+    row.hidden = false;
+    const inp = $('#name-input');
+    inp.focus();
+    $('#btn-name-ok').onclick = () => {
+      store.name = cleanName(inp.value) || 'anon';
+      row.hidden = true;
+      then();
+    };
+    return;
+  }
+  const n = window.prompt('Your name, shown to friends', '');
+  if (n === null) return;
+  store.name = cleanName(n) || 'anon';
+  then();
+}
+
+function doUpload(btn) {
+  withName(async () => {
+    btn.disabled = true;
+    btn.textContent = 'Uploading…';
+    const res = await uploadBest(dateKey);
+    if (res.error) {
+      btn.disabled = false;
+      btn.textContent = 'Upload ghost';
+      toast(capitalize(res.error) + '.');
+      return;
+    }
+    btn.textContent = `Uploaded · #${res.rank}`;
+    toast(`Ghost uploaded. You're #${res.rank} of ${res.total} today.`);
+    await refreshBoard(dateKey, { maxAgeMs: 0 });
+    if (mode === 'home') renderHome();
+  });
 }
 
 async function doShare(btn) {
-  if (!store.name) {
-    const row = $('#name-row');
-    if (row && row.hidden) {
-      row.hidden = false;
-      const inp = $('#name-input');
-      inp.focus();
-      $('#btn-name-ok').onclick = () => {
-        store.name = cleanName(inp.value) || 'anon';
-        row.hidden = true;
-        doShare(btn);
-      };
-      return;
-    }
-    if (!row) {
-      const n = window.prompt('Your name, shown to friends', '');
-      store.name = cleanName(n) || 'anon';
-    }
-  }
+  if (!store.name) return withName(() => doShare(btn));
   const mine = store.day(dateKey);
   if (!mine?.best) return;
-  const url = challengeUrl({ dateKey, ms: mine.best, name: store.name, inputs: mine.inputs });
+  const url = challengeUrl({ dateKey, ms: mine.best, name: store.name, inputs: mine.inputs, crew: crew() });
   const text = shareText({ day, ms: mine.best });
   const res = await shareRun({ text, url });
   if (res === 'copied') toast('Link copied. Send it to a friend.');
@@ -567,6 +632,7 @@ for (const id of ['#btn-restart', '#btn-quit']) {
 // ---------- boot ----------
 
 function boot() {
+  initCrew();
   challenge = parseChallenge(location.hash);
   if (challenge && !challenge.valid) {
     challenge = null;

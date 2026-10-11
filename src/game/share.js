@@ -5,23 +5,19 @@
 // shown as verified.
 
 import { decodeInputs } from '../core/replay.js';
+import { cleanName } from '../core/names.js';
 import { buildDay, isDateKey } from '../core/day.js';
 import { runInputs, timeMs } from '../core/sim.js';
 
-export function cleanName(raw) {
-  return String(raw || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9 _-]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 14);
-}
+export { cleanName };
 
 const toUrlName = (n) => n.replace(/ /g, '_');
 const fromUrlName = (n) => n.replace(/_/g, ' ');
 
-export function challengeUrl({ dateKey, ms, name, inputs }) {
-  const base = `${location.origin}${location.pathname}`;
+export function challengeUrl({ dateKey, ms, name, inputs, crew }) {
+  // a crew code rides along in the query, so a friend lands on the same board
+  const query = crew && crew !== 'public' ? `?crew=${encodeURIComponent(crew)}` : '';
+  const base = `${location.origin}${location.pathname}${query}`;
   const who = toUrlName(cleanName(name) || 'a friend');
   return `${base}#c=${dateKey}.${ms}.${who}.${inputs}`;
 }

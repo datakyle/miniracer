@@ -20,6 +20,34 @@ function load() {
   }
 }
 
+// identity lives under its own key so it survives the version bumps above
+const PROFILE_KEY = 'dailylap:profile';
+let profile = loadProfile();
+
+function loadProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveProfile() {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // ignore
+  }
+}
+
+function randomId() {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
@@ -39,6 +67,30 @@ export function prune(todayKey) {
 }
 
 export const store = {
+  // anonymous id for the ghost server: one per browser, never shown
+  get playerId() {
+    if (!profile.playerId) {
+      profile.playerId = randomId();
+      saveProfile();
+    }
+    return profile.playerId;
+  },
+  get crew() {
+    return profile.crew || null;
+  },
+  set crew(v) {
+    profile.crew = v;
+    saveProfile();
+  },
+  uploaded(dateKey) {
+    return data.days[dateKey]?.uploaded ?? null;
+  },
+  markUploaded(dateKey, ms) {
+    const d = data.days[dateKey];
+    if (!d) return;
+    d.uploaded = ms;
+    save();
+  },
   get name() {
     return data.name;
   },

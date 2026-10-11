@@ -58,14 +58,20 @@ src/core/        pure, deterministic, no DOM
   sim.js         car physics (auto throttle, yaw, grip/drift, walls, checkpoints, sub-frame finish)
   bot.js         pursuit driver: proves the track is drivable; a laggy variant drives danger darrell, the starter ghost
   replay.js      input codec
-  day.js         date -> { track, bot lap, starter ghost }
+  day.js         date -> { track, bot lap, starter ghost }; Central-time days
+  schedule.js    generated: which generator attempt each day uses
+  names.js       player name and crew code rules (shared with the server)
 src/game/        browser side
   render.js      canvas renderer (themes, curbs, skid marks, ghosts, scenery)
   input.js       multi-touch halves + keyboard
   audio.js       procedural engine / tyre / bump sounds
   share.js       challenge links + verification
   storage.js     localStorage (bests, ghosts, friends, streak)
-  ghosts.js      which ghosts exist for a day; the seam for a future shared ghost server
+  ghosts.js      which ghosts exist for a day (starter, you, crew, links), and who to race
+  cloud.js       talks to the ghost server; fails soft when it isn't configured
+src/config.js    GHOST_API: the ghost server's address
+worker/          Cloudflare Worker + D1 ghost server (see Shared ghosts)
+scripts/         gen-schedule.mjs
 src/main.js      game loop, screens
 ```
 
@@ -87,6 +93,50 @@ GitHub Pages serves the `main` branch as-is (Settings → Pages → "Deploy from
 `.github/workflows/ci.yml` runs the tests and a Vite build on every push, so a broken change shows up as a red check.
 
 For other static hosts, either serve the repo root or run `npm run build` and upload `dist/`. Both work from any path.
+
+## Shared ghosts
+
+Players can tap **Upload ghost** after a lap. Their best lap for the day goes to a small server, and everyone on the same **crew** races against it and sees it on the day's board. There are no accounts. Each browser gets a random player id, and the name is whatever the player types.
+
+- **The server checks every lap.** It rebuilds the day's track and re-simulates the uploaded steering with the same code the game runs. It stores the time that comes out, never the time the client claims. A lap that doesn't finish is rejected. A copy of someone else's lap is rejected too, even if it's padded with extra frames.
+- **One row per player per day.** A faster upload replaces the old one, and a slower one doesn't.
+- **Crews keep groups apart.** Links look like `https://datakyle.github.io/miniracer/?crew=kyles-crew`. Anyone who opens a crew link joins that crew, and **Share link** includes your crew. Without a crew you're on `public`. You can change it from the footer of the home screen.
+- **Everyone's day changes at midnight US Central**, wherever they are, so friends always race the same track.
+
+### Cost
+
+$0. The server is a Cloudflare Worker with a D1 database. The free plan includes 5 GB of D1 storage, 5M rows read and 100k rows written per day ([D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)). A friend group uses a tiny fraction of that: a ghost is a few hundred bytes. If the free limit is ever hit, uploads fail until the next UTC day. Nothing is charged.
+
+### One-time setup (about 10 minutes)
+
+On your computer, with Node 20+ installed:
+
+```sh
+git clone https://github.com/datakyle/miniracer && cd miniracer/worker
+npm install
+npx wrangler login                    # opens a browser to sign in to Cloudflare (free account)
+npx wrangler d1 create miniracer      # prints a database_id
+#   paste that id into worker/wrangler.toml (database_id = "...")
+npm run db:remote                     # creates the ghosts table
+npm run deploy                        # prints https://miniracer-ghosts.<you>.workers.dev
+```
+
+Then put that URL in `src/config.js` (`GHOST_API`), commit and push. GitHub Pages picks it up in a minute, and the Upload button appears.
+
+### Trying it locally
+
+```sh
+cd worker && npm install && npm run db:local && npm run dev    # server on http://127.0.0.1:8787
+# in another terminal, from the repo root:
+npm run dev
+# open http://localhost:5173/?api=http://127.0.0.1:8787&crew=test
+```
+
+`?api=` points one tab at any ghost server, without touching `src/config.js`.
+
+### Keeping the schedule in sync
+
+The server can't afford to search for each day's track on every request, so `src/core/schedule.js` lists which generator attempt each day uses (through 2028). If you change track generation, physics or the bot, run `node scripts/gen-schedule.mjs`. A test fails until you do.
 
 ## Handling
 
