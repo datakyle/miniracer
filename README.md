@@ -2,6 +2,8 @@
 
 # Daily lap
 
+**Best with:** competitive friends or a group chat · a phone · 2 minutes a day
+
 A two-minute daily habit: one lap, one new track, and a link that lets a friend race your exact lap. It runs in a phone browser. No login, no app, no server.
 
 ### [Play today's lap → datakyle.github.io/miniracer](https://datakyle.github.io/miniracer/)
