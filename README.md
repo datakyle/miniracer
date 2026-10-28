@@ -158,3 +158,5 @@ The car follows the "traction lerp" approach common in top-down racers (see the 
 
 Changing any of these changes the tracks or the physics, so old challenge links stop
 verifying.
+
+Also made: [Life in Weeks](https://github.com/datakyle/life-cal) (your whole life, one square per week) · [Name 3 in 5](https://github.com/datakyle/5-in-3) (a pass-the-phone party game)
